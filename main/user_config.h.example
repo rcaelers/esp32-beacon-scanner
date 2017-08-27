@@ -1,0 +1,10 @@
+#ifndef USER_CONFIG_H
+#define USER_CONFIG_H
+
+#define WIFI_SSID "yourssid"
+#define WIFI_PASS "yourpass"
+
+#define MQTT_USER "yourusername"
+#define MQTT_PASS "yourpass"
+
+#endif
