@@ -24,6 +24,8 @@
 #include <chrono>
 #include <vector>
 
+#include "os/optional.hpp"
+
 #include "os/Mutex.hpp"
 #include "os/Semaphore.hpp"
 #include "os/ScopedLock.hpp"
@@ -89,6 +91,28 @@ namespace os
       return ok;
     }
 
+    template <class... Args>
+    bool emplace(Args&&... args)
+    {
+      return emplace_for(std::chrono::milliseconds(portMAX_DELAY), std::forward<Args>(args)...);
+    }
+
+    // TODO: fix inconsistent API
+    template <class... Args>
+    bool emplace_for(std::chrono::milliseconds timeout_duration, Args&&... args)
+    {
+      bool ok = produce_sem.take(timeout_duration);
+      if (ok)
+        {
+          {
+            ScopedLock l(mutex);
+            queue_data.emplace_back(std::forward<Args>(args)...);
+          }
+          consume_sem.give();
+        }
+      return ok;
+    }
+
     bool push(T &&obj)
     {
       return push(std::move(obj), std::chrono::milliseconds(portMAX_DELAY));
@@ -108,7 +132,6 @@ namespace os
       return ok;
     }
 
-    // TODO: add pop with move semantics
     bool pop(T &obj)
     {
       return pop(obj, std::chrono::milliseconds(portMAX_DELAY));
@@ -127,6 +150,28 @@ namespace os
           produce_sem.give();
         }
       return ok;
+    }
+
+    nonstd::optional<T> pop()
+    {
+      return pop(std::chrono::milliseconds(portMAX_DELAY));
+    }
+
+    nonstd::optional<T> pop(std::chrono::milliseconds timeout_duration)
+    {
+      bool ok = consume_sem.take(timeout_duration);
+      nonstd::optional<T> ret;
+      if (ok)
+        {
+          {
+            ScopedLock l(mutex);
+            ret = nonstd::optional<T>(std::move(queue_data.front()));
+            queue_data.erase(queue_data.begin());
+          }
+          produce_sem.give();
+        }
+
+      return ret;
     }
 
     int size() const

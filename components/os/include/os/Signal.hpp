@@ -61,7 +61,7 @@ namespace os
       slots.back().activate();
     }
 
-    void operator()(Args const&... args)
+    void operator()(const Args &... args)
     {
       ScopedLock l(mutex);
       for (auto &slot : slots)

@@ -108,13 +108,10 @@ BeaconScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_pa
                 }
               }
 
-              ScanResult result;
               char mac[18];
               sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
 
-              result.mac = mac;
-              result.rssi = scan_result->scan_rst.rssi;
-              signal_scan_result(result);
+              signal_scan_result(ScanResult(scan_result->scan_rst.rssi, mac));
               break;
             }
 

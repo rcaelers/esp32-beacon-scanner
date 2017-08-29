@@ -23,58 +23,94 @@
 
 #include "os/MainLoop.hpp"
 
-#include "esp_log.h"
-
 namespace os
 {
-  template <class T>
-  class Slot;
-
-  template<class... Args>
-  class Slot<void(Args...)>
+  namespace detail
   {
-    using callback_type = std::function<void(Args...)>;
-
-  private:
-    template<class F>
+    template<typename F, typename... Args>
     class Closure
     {
     public:
+      using function_type = std::function<void(Args...)>;
+      using tuple_type = std::tuple<Args...>;
+
       Closure() = default;
+      ~Closure() = default;
 
-      Closure(const Closure&) = default;
-      Closure &operator=(const Closure&) = default;
-
-      Closure(Closure &&) = default;
-      Closure &operator=(Closure &&) = default;
-
-      // TODO: move semantics
-      Closure(F &f, Args... args)
+      Closure(Closure &&lhs)
+        : fn(std::move(lhs.fn)),
+          args(std::move(lhs.args))
       {
-        fn = f;
-        tuple = std::tuple<Args...>(args...);
+      }
+
+      Closure &operator=(Closure &&lhs)
+      {
+        if (this != &lhs)
+          {
+            fn = std::move(lhs.fn);
+            args = std::move(lhs.args);
+          }
+        return *this;
+      }
+
+      Closure(const Closure &lhs)
+        : fn(lhs.fn),
+          args(lhs.args)
+      {
+      }
+
+      Closure &operator=(const Closure &lhs)
+      {
+        if (this != &lhs)
+          {
+            fn = lhs.fn;
+            args = lhs.args;
+          }
+        return *this;
+      }
+
+      Closure(F fn, Args... args) :
+        fn(fn),
+        args(std::make_tuple(std::move(args)...))
+      {
       }
 
       void operator()()
       {
-        call_func_with_tuple(std::index_sequence_for<Args...>());
+        invoke_helper(std::index_sequence_for<Args...>());
       }
 
     private:
       template<std::size_t... Is>
-      void call_func_with_tuple(std::index_sequence<Is...>)
+      void invoke_helper(std::index_sequence<Is...>)
       {
-        fn(std::get<Is>(tuple)...);
+        fn(std::get<Is>(args)...);
       }
 
-      callback_type fn;
-      std::tuple<Args...> tuple;
+    private:
+      function_type fn;
+      std::tuple<Args...> args;
     };
 
-    using closure_type = Closure<callback_type>;
+    template<typename F, typename... Args>
+    auto make_closure(F &&fn, Args&&... args)
+    {
+      return Closure<F, Args...>(std::forward<F>(fn), std::forward<Args>(args)...);
+    }
+  }
+
+  template <typename T>
+  class Slot;
+
+  template<typename... Args>
+  class Slot<void(Args...)>
+  {
+  private:
+    using callback_type = std::function<void(Args...)>;
+    using closure_type = detail::Closure<callback_type, Args...>;
 
   public:
-    Slot(os::MainLoop &loop, std::function<void(Args...)> callback, int size = 10)
+    Slot(os::MainLoop &loop, callback_type callback, int size = 10)
       : loop(loop), queue(size), callback(callback)
     {
     }
@@ -100,10 +136,9 @@ namespace os
       return *this;
     }
 
-    void operator()(Args const&... args)
+    void operator()(Args... args)
     {
-      // TODO: move semantics
-      queue.push(closure_type(callback, args...));
+      queue.emplace(callback, std::move(args)...);
     }
 
     void activate()
@@ -113,12 +148,11 @@ namespace os
 
     void execute()
     {
-      // TODO: move semantics
-      closure_type p;
-      if (queue.pop(p))
-        {
-          p();
-        }
+      nonstd::optional<closure_type> obj(queue.pop());
+      if (obj)
+      {
+        (*obj)();
+      }
     }
 
   private:

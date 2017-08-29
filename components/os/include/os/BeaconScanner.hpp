@@ -44,6 +44,45 @@ namespace os
 
     struct ScanResult
     {
+      ScanResult() = default;
+      ScanResult(int rssi, std::string mac)
+        : rssi(rssi), mac(mac)
+      {
+      }
+
+
+      ScanResult(ScanResult &&lhs)
+        : rssi(std::move(lhs.rssi)),
+          mac(std::move(lhs.mac))
+      {
+      }
+
+      ScanResult &operator=(ScanResult &&lhs)
+      {
+        if (this != &lhs)
+          {
+            rssi = std::move(lhs.rssi);
+            mac = std::move(lhs.mac);
+          }
+        return *this;
+      }
+
+      ScanResult(const ScanResult &lhs)
+        : rssi(lhs.rssi),
+          mac(lhs.mac)
+      {
+      }
+
+      ScanResult &operator=(const ScanResult &lhs)
+      {
+        if (this != &lhs)
+          {
+            rssi = lhs.rssi;
+            mac = lhs.mac;
+          }
+        return *this;
+      }
+
       int rssi;
       // TODO: use custom Mac address class.
       std::string mac;
