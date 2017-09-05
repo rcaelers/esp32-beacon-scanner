@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <system_error>
+
 #include "os/Task.hpp"
 
 using namespace os;
@@ -28,15 +30,19 @@ Task::Task(const std::string &name, std::function<void ()> func, CoreId core_id,
     stack_size(stack_size),
     priority(priority)
 {
+  BaseType_t rc = pdPASS;
   if (core_id != CoreId::NoAffinity)
     {
-      xTaskCreate(&Task::run, name.c_str(), stack_size, this, priority, &task_handle);
-      // TODO: throw errc::resource_unavailable_try_again on failure, once supported by ESP-IDF.
+      rc = xTaskCreate(&Task::run, name.c_str(), stack_size, this, priority, &task_handle);
     }
   else
     {
-      xTaskCreatePinnedToCore(&Task::run, name.c_str(), stack_size, this, priority, &task_handle, static_cast<std::underlying_type_t<CoreId>>(core_id));
-      // TODO: throw errc::resource_unavailable_try_again on failure, once supported by ESP-IDF.
+      rc = xTaskCreatePinnedToCore(&Task::run, name.c_str(), stack_size, this, priority, &task_handle, static_cast<std::underlying_type_t<CoreId>>(core_id));
+    }
+
+  if (rc != pdPASS)
+    {
+      throw std::errc::resource_unavailable_try_again;
     }
 }
 

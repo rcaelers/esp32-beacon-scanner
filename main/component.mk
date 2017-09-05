@@ -4,4 +4,4 @@
 COMPONENT_ADD_INCLUDEDIRS := include
 COMPONENT_SRCDIRS += os
 
-CXXFLAGS+=-std=gnu++14
+CXXFLAGS+=-std=gnu++14 -fexceptions
