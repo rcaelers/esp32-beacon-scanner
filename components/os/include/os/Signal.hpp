@@ -22,6 +22,7 @@
 #define OS_SIGNAL_HPP
 
 #include <list>
+#include <deque>
 
 #include "os/Slot.hpp"
 #include "os/Mutex.hpp"
@@ -72,7 +73,7 @@ namespace os
 
   private:
     mutable os::Mutex mutex;
-    std::vector<slot_type> slots;
+    std::deque<slot_type> slots;
   };
 }
 

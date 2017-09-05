@@ -22,7 +22,7 @@
 #define OS_QUEUE_HPP
 
 #include <chrono>
-#include <vector>
+#include <deque>
 
 #include "os/optional.hpp"
 
@@ -41,7 +41,6 @@ namespace os
         consume_sem(max_size, 0),
         max_size(max_size)
     {
-      queue_data.reserve(max_size);
     }
 
     ~Queue()
@@ -68,7 +67,7 @@ namespace os
           produce_sem = std::move(lhs.produce_sem);
           consume_sem = std::move(lhs.consume_sem);
           queue_data = std::move(lhs.queue_data);
-          max_size = lhs.max_size; 
+          max_size = lhs.max_size;
        }
       return *this;
     }
@@ -189,7 +188,7 @@ namespace os
     os::Mutex mutex;
     os::Semaphore produce_sem;
     os::Semaphore consume_sem;
-    std::vector<T> queue_data;
+    std::deque<T> queue_data;
     int max_size = 0;
   };
 }

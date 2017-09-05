@@ -118,6 +118,8 @@ namespace os
     Slot(const Slot&) = delete;
     Slot &operator=(const Slot&) = delete;
 
+    // TODO: re-register slot at queue when slot is moved.
+
     Slot(Slot &&lhs)
       : loop(lhs.loop),
         queue(std::move(lhs.queue)),
@@ -143,6 +145,7 @@ namespace os
 
     void activate()
     {
+      // TODO: Slot can no longer be moved once activated.
       loop.register_queue(queue, std::bind(&Slot<void(Args...)>::execute, this));
     }
 
