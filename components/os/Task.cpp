@@ -55,4 +55,5 @@ void
 Task::run(void *self)
 {
   static_cast<Task*>(self)->func();
+  vTaskDelete(nullptr);
 }
