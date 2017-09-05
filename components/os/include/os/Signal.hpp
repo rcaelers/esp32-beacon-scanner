@@ -44,8 +44,22 @@ namespace os
 
     Signal(const Signal&) = delete;
     Signal& operator=(const Signal&) = delete;
-    Signal(Signal &&slot) = default;
-    Signal &operator=(Signal &&lhs) = default;
+
+    Signal(Signal &&lhs)
+      : mutex(std::move(lhs.mutex)),
+        slots(std::move(lhs.slots))
+    {
+    }
+
+    Signal &operator=(Signal &&lhs)
+    {
+      if (this != &lhs)
+        {
+          mutex = std::move(lhs.mutex);
+          slots = std::move(lhs.slots);
+        }
+      return *this;
+    }
 
     // TODO: hide slot from API
     void connect(const slot_type &slot)
