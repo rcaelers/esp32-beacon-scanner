@@ -24,7 +24,7 @@
 #include <string>
 #include <functional>
 
-#include <freertos/FreeRTOS.h>
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 namespace os

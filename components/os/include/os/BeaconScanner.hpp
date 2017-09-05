@@ -25,7 +25,7 @@
 
 #include "esp_gap_ble_api.h"
 
-#include <freertos/FreeRTOS.h>
+#include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
 #include "os/Task.hpp"

@@ -24,8 +24,8 @@
 #include <functional>
 #include <map>
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #include "os/Queue.hpp"
 
