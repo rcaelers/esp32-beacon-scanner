@@ -20,12 +20,14 @@
 
 #include "os/MainLoop.hpp"
 
+#include "esp_log.h"
+
 using namespace os;
 
 void
 MainLoop::prepare()
 {
-  if (queue_set == nullptr)
+  if (queue_set == nullptr && total_size > 0)
     {
       queue_set = xQueueCreateSet(total_size);
       for (auto &queue : queues)
@@ -39,6 +41,12 @@ void
 MainLoop::run()
 {
   prepare();
+
+  if (queue_set == nullptr)
+    {
+      ESP_LOGE("MAINLOOP", "Nothing to do. Aborting");
+      return;
+    }
 
   for (;;)
   {
