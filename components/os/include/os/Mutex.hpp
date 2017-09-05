@@ -67,6 +67,7 @@ namespace os
 
     void lock()
     {
+      assert(mutex_handle != nullptr);
       xSemaphoreTake(mutex_handle, portMAX_DELAY);
     }
 
@@ -77,11 +78,13 @@ namespace os
 
     bool try_lock(std::chrono::milliseconds timeout_duration)
     {
+      assert(mutex_handle != nullptr);
       return xSemaphoreTake(mutex_handle, timeout_duration.count() / portTICK_PERIOD_MS) == pdTRUE;
     }
 
     void unlock()
     {
+      assert(mutex_handle != nullptr);
       xSemaphoreGive(mutex_handle);
     }
 
