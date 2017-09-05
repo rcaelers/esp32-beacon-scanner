@@ -67,16 +67,19 @@ namespace os
 
     bool take()
     {
+      assert(semaphore_handle != nullptr);
       return take(std::chrono::milliseconds(portMAX_DELAY));
     }
 
     bool take(std::chrono::milliseconds timeout_duration)
     {
+      assert(semaphore_handle != nullptr);
       return xSemaphoreTake(semaphore_handle, timeout_duration.count() / portTICK_PERIOD_MS) == pdTRUE;
     }
 
     bool give()
     {
+      assert(semaphore_handle != nullptr);
       return xSemaphoreGive(semaphore_handle) == pdTRUE;
     }
 
