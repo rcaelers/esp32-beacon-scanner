@@ -18,11 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <iostream>
+#include <string>
+
 #include "os/Wifi.hpp"
 #include "os/BeaconScanner.hpp"
 #include "os/Slot.hpp"
 #include "os/Task.hpp"
 #include "os/MainLoop.hpp"
+#include "os/Mqtt.hpp"
 
 #include "esp_log.h"
 #include "driver/gpio.h"
@@ -31,6 +35,13 @@
 #include "user_config.h"
 
 static const char tag[] = "BEACON-SCANNER";
+
+extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
+extern const uint8_t ca_end[] asm("_binary_CA_crt_end");
+extern const uint8_t certificate_start[] asm("_binary_ESP32_crt_start");
+extern const uint8_t certificate_end[] asm("_binary_ESP32_crt_end");
+extern const uint8_t private_key_start[] asm("_binary_ESP32_key_start");
+extern const uint8_t private_key_end[] asm("_binary_ESP32_key_end");
 
 class Main
 {
@@ -71,6 +82,8 @@ private:
     ESP_LOGI(tag, "-> BT result %s %d", result.mac.c_str(), result.rssi);
     led_state ^= 1;
     gpio_set_level(LED_GPIO, led_state);
+
+    mqtt.publish("beacon", result.mac);
   }
 
   void main_task()
@@ -86,6 +99,8 @@ private:
 
     wifi.connect();
 
+    mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+
     loop.run();
   }
 
@@ -93,9 +108,11 @@ private:
   os::Wifi &wifi;
   os::MainLoop loop;
   os::Task task;
+  os::Mqtt mqtt;
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };
+
 
 extern "C" void
 app_main()

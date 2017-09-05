@@ -7,4 +7,6 @@
 #define MQTT_USER "yourusername"
 #define MQTT_PASS "yourpass"
 
+#define MQTT_HOST "host"
+
 #endif
