@@ -34,8 +34,11 @@ namespace os
   class Wifi
   {
   public:
-    Wifi();
-    ~Wifi();
+    static Wifi &instance()
+    {
+      static Wifi instance;
+      return instance;
+    }
 
     Wifi(const Wifi&) = delete;
     Wifi& operator=(const Wifi&) = delete;
@@ -51,6 +54,9 @@ namespace os
     os::Property<bool> &connected();
 
   private:
+    Wifi();
+    ~Wifi();
+
     static esp_err_t on_sysem_event(void *ctx, system_event_t *event);
     esp_err_t on_sysem_event(system_event_t *event);
 

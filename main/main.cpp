@@ -37,6 +37,7 @@ class Main
 public:
   Main()
     : beacon_scanner(os::BeaconScanner::instance()),
+      wifi(os::Wifi::instance()),
       task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
@@ -89,7 +90,7 @@ private:
   }
 
   os::BeaconScanner &beacon_scanner;
-  os::Wifi wifi;
+  os::Wifi &wifi;
   os::MainLoop loop;
   os::Task task;
 
