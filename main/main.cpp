@@ -38,10 +38,10 @@ static const char tag[] = "BEACON-SCANNER";
 
 extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
 extern const uint8_t ca_end[] asm("_binary_CA_crt_end");
-extern const uint8_t certificate_start[] asm("_binary_ESP32_crt_start");
-extern const uint8_t certificate_end[] asm("_binary_ESP32_crt_end");
-extern const uint8_t private_key_start[] asm("_binary_ESP32_key_start");
-extern const uint8_t private_key_end[] asm("_binary_ESP32_key_end");
+extern const uint8_t certificate_start[] asm("_binary_esp32_crt_start");
+extern const uint8_t certificate_end[] asm("_binary_esp32_crt_end");
+extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
+extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 
 class Main
 {

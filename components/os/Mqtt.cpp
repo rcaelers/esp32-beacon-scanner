@@ -101,7 +101,7 @@ Mqtt::init(const char *host, const char *ca, const char *cert, const char *key)
   init_params.port = 8883;
   init_params.mqttCommandTimeout_ms = 20000;
   init_params.tlsHandshakeTimeout_ms = 5000;
-  init_params.isSSLHostnameVerify = false; // TODO: this doesn't work yet. true;
+  init_params.isSSLHostnameVerify = true;
   init_params.disconnectHandler = disconnect_callback_static;
   init_params.disconnectHandlerData = this;
 
