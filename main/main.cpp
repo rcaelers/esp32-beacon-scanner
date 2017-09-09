@@ -66,11 +66,23 @@ private:
     if (connected)
       {
         ESP_LOGI(tag, "-> Wifi connected");
-        beacon_scanner.start();
       }
     else
       {
         ESP_LOGI(tag, "-> Wifi disconnected");
+      }
+  }
+
+  void on_mqtt_connected(bool connected)
+  {
+    if (connected)
+      {
+        ESP_LOGI(tag, "-> MQTT connected");
+        beacon_scanner.start();
+      }
+    else
+      {
+        ESP_LOGI(tag, "-> MQTT disconnected");
         beacon_scanner.stop();
       }
   }
@@ -99,6 +111,7 @@ private:
 
     wifi.connect();
 
+    mqtt.connected().connect(os::Slot<void(bool)>(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1)));
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 
     loop.run();
