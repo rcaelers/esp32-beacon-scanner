@@ -120,18 +120,8 @@ Mqtt::init(const char *host, const char *ca, const char *cert, const char *key)
 void
 Mqtt::publish(std::string topic, std::string data)
 {
-  IoT_Publish_Message_Params msg;
-  msg.qos = QOS0;
-  msg.payload = static_cast<void *>(const_cast<char *>(data.c_str()));
-  msg.payloadLen = data.length();
-  msg.isRetained = 0;
-
-  IoT_Error_t rc = aws_iot_mqtt_publish(&client, topic.c_str(), topic.length(), &msg);
-  if (rc != SUCCESS)
-    {
-      // TODO: throw exception
-      ESP_LOGE(tag, "MQTT failed to publish (%d) ", rc);
-    }
+  ScopedLock l(mutex);
+  queue.push(std::make_pair(topic, data));
 }
 
 void
@@ -174,10 +164,32 @@ Mqtt::yield_task()
 
   while ((rc == NETWORK_ATTEMPTING_RECONNECT || rc == NETWORK_RECONNECTED || rc == SUCCESS))
     {
+      // TODO: replace AWS IoT MQTT to get rid of this polling loop....
       rc = aws_iot_mqtt_yield(&client, 100);
       if (rc == NETWORK_ATTEMPTING_RECONNECT)
         {
           continue;
         }
+
+      // TODO: queue may be locked too long
+      mutex.lock();
+      while (!queue.empty())
+        {
+          auto msg = queue.front();
+          IoT_Publish_Message_Params msg_param;
+          msg_param.qos = QOS0;
+          msg_param.payload = static_cast<void *>(const_cast<char *>(msg.second.c_str()));
+          msg_param.payloadLen = msg.second.length();
+          msg_param.isRetained = 0;
+
+          IoT_Error_t rc = aws_iot_mqtt_publish(&client, msg.first.c_str(), msg.first.length(), &msg_param);
+          if (rc != SUCCESS)
+            {
+              ESP_LOGE(tag, "MQTT failed to publish (%d) %d", rc, aws_iot_mqtt_get_client_state(&client));
+            }
+          queue.pop();
+        }
+
+      mutex.unlock();
     }
 }

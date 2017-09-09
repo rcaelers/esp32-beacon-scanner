@@ -23,6 +23,7 @@
 
 #include <chrono>
 #include <string>
+#include <queue>
 
 #include "os/Task.hpp"
 #include "os/Wifi.hpp"
@@ -70,6 +71,12 @@ namespace os
 
     os::Task mqtt_loop_task;
     os::Task mqtt_yield_task;
+
+
+    mutable os::Mutex mutex;
+
+    using msg_type = std::pair<std::string, std::string>;
+    std::queue<msg_type> queue;
   };
 }
 
