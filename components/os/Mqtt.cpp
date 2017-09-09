@@ -63,6 +63,7 @@ void
 Mqtt::disconnect_callback(AWS_IoT_Client *client)
 {
   ESP_LOGW(tag, "MQTT Disconnected");
+  connected_property.set(false);
 
   if (client == nullptr)
     {
@@ -96,7 +97,7 @@ void
 Mqtt::init(const char *host, const char *ca, const char *cert, const char *key)
 {
   IoT_Client_Init_Params init_params = iotClientInitParamsDefault;
-  init_params.enableAutoReconnect = true;
+  init_params.enableAutoReconnect = false;
   init_params.pHostURL = const_cast<char *>(host);
   init_params.port = 8883;
   init_params.mqttCommandTimeout_ms = 20000;
@@ -156,6 +157,8 @@ Mqtt::yield_task()
         }
     } while (rc != SUCCESS);
 
+  connected_property.set(true);
+
   rc = aws_iot_mqtt_autoreconnect_set_status(&client, true);
   if (rc != SUCCESS)
     {
@@ -170,6 +173,7 @@ Mqtt::yield_task()
         {
           continue;
         }
+      connected_property.set(true);
 
       // TODO: queue may be locked too long
       mutex.lock();
@@ -192,4 +196,11 @@ Mqtt::yield_task()
 
       mutex.unlock();
     }
+}
+
+
+os::Property<bool> &
+Mqtt::connected()
+{
+  return connected_property;
 }

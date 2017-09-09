@@ -49,6 +49,8 @@ namespace os
 
     void publish(std::string topic, std::string data);
 
+    os::Property<bool> &connected();
+
   private:
     static void subscribe_callback_static(AWS_IoT_Client *client, char *topic, uint16_t topic_len, IoT_Publish_Message_Params *params, void *user_data);
     static void disconnect_callback_static(AWS_IoT_Client *client, void *user_data);
@@ -71,6 +73,7 @@ namespace os
 
     os::Task mqtt_loop_task;
     os::Task mqtt_yield_task;
+    os::Property<bool> connected_property { false };
 
 
     mutable os::Mutex mutex;
