@@ -4,5 +4,5 @@ Certificates
 https://github.com/square/certstrap
 
 certstrap init --common-name "CA"
-certstrap request-cert -cn <hostname> --ip <ip>
-certstrap sign <hostname> --CA "CA"
+certstrap request-cert -cn <username> --ip <ip>
+certstrap sign <username> --CA "CA"
