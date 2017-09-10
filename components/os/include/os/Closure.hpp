@@ -18,78 +18,83 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef OS_SLOT_HPP
-#define OS_SLOT_HPP
+#ifndef OS_CLOSURE_HPP
+#define OS_CLOSURE_HPP
 
 #include "os/MainLoop.hpp"
-#include "os/Closure.hpp"
 
 namespace os
 {
-  template <typename T>
-  class Slot;
-
-  template<typename... Args>
-  class Slot<void(Args...)>
+  template<typename F, typename... Args>
+  class Closure
   {
-  private:
-    using callback_type = std::function<void(Args...)>;
-    using closure_type = os::Closure<callback_type, Args...>;
-
   public:
-    Slot(os::MainLoop &loop, callback_type callback, int size = 10)
-      : loop(loop), queue(size), callback(callback)
+    using function_type = std::function<void(Args...)>;
+    using tuple_type = std::tuple<Args...>;
+
+    Closure() = default;
+    ~Closure() = default;
+
+    Closure(Closure &&lhs)
+      : fn(std::move(lhs.fn)),
+        args(std::move(lhs.args))
     {
     }
 
-    Slot(const Slot&) = delete;
-    Slot &operator=(const Slot&) = delete;
-
-    // TODO: re-register slot at queue when slot is moved.
-
-    Slot(Slot &&lhs)
-      : loop(lhs.loop),
-        queue(std::move(lhs.queue)),
-        callback(std::move(lhs.callback))
-    {
-    }
-
-    Slot &operator=(Slot &&lhs)
+    Closure &operator=(Closure &&lhs)
     {
       if (this != &lhs)
         {
-          loop = lhs.loop;
-          queue = std::move(lhs.queue);
-          callback = std::move(lhs.callback);
+          fn = std::move(lhs.fn);
+          args = std::move(lhs.args);
         }
       return *this;
     }
 
-    void operator()(Args... args)
+    Closure(const Closure &lhs)
+      : fn(lhs.fn),
+        args(lhs.args)
     {
-      queue.emplace(callback, std::move(args)...);
     }
 
-    void activate()
+    Closure &operator=(const Closure &lhs)
     {
-      // TODO: Slot can no longer be moved once activated.
-      loop.register_queue(queue, std::bind(&Slot<void(Args...)>::execute, this));
+      if (this != &lhs)
+        {
+          fn = lhs.fn;
+          args = lhs.args;
+        }
+      return *this;
     }
 
-    void execute()
+    Closure(F fn, Args... args) :
+      fn(fn),
+      args(std::make_tuple(std::move(args)...))
     {
-      nonstd::optional<closure_type> obj(queue.pop());
-      if (obj)
-      {
-        (*obj)();
-      }
+    }
+
+    void operator()()
+    {
+      invoke_helper(std::index_sequence_for<Args...>());
     }
 
   private:
-    os::MainLoop &loop;
-    os::Queue<closure_type> queue;
-    std::function<void(Args...)> callback;
+    template<std::size_t... Is>
+    void invoke_helper(std::index_sequence<Is...>)
+    {
+      fn(std::get<Is>(args)...);
+    }
+
+  private:
+    function_type fn;
+    std::tuple<Args...> args;
   };
+
+  template<typename F, typename... Args>
+  auto make_closure(F &&fn, Args&&... args)
+  {
+    return Closure<F, Args...>(std::forward<F>(fn), std::forward<Args>(args)...);
+  }
 }
 
-#endif // OS_SLOT_HPP
+#endif // OS_CLOSURE_HPP
