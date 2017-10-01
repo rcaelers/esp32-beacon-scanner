@@ -21,6 +21,10 @@
 #ifndef OS_BEACON_SCANNER_HPP
 #define OS_BEACON_SCANNER_HPP
 
+#include "sdkconfig.h"
+
+#ifdef CONFIG_BT_ENABLED
+
 #include <string>
 
 #include "esp_gap_ble_api.h"
@@ -121,5 +125,7 @@ namespace os
     const static int READY_BIT = BIT1;
   };
 }
+
+#endif
 
 #endif // OS_BEACON_SCANNER_HPP

@@ -20,6 +20,8 @@
 
 #include "os/BeaconScanner.hpp"
 
+#ifdef CONFIG_BT_ENABLED
+
 #include "bt.h"
 #include "esp_bt_main.h"
 #include "esp_log.h"
@@ -197,3 +199,5 @@ BeaconScanner::scan_result_signal()
 {
   return signal_scan_result;
 }
+
+#endif

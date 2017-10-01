@@ -46,10 +46,12 @@ extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 class Main
 {
 public:
-  Main()
-    : beacon_scanner(os::BeaconScanner::instance()),
-      wifi(os::Wifi::instance()),
-      task("main_task", std::bind(&Main::main_task, this))
+  Main():
+#ifdef  CONFIG_BT_ENABLED
+    beacon_scanner(os::BeaconScanner::instance()),
+#endif
+    wifi(os::Wifi::instance()),
+    task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
@@ -78,15 +80,20 @@ private:
     if (connected)
       {
         ESP_LOGI(tag, "-> MQTT connected");
+#ifdef  CONFIG_BT_ENABLED
         beacon_scanner.start();
+#endif
       }
     else
       {
         ESP_LOGI(tag, "-> MQTT disconnected");
+#ifdef  CONFIG_BT_ENABLED
         beacon_scanner.stop();
+#endif
       }
   }
 
+#ifdef  CONFIG_BT_ENABLED
   void on_beacon_scanner_scan_result(os::BeaconScanner::ScanResult result)
   {
     static int led_state = 0;
@@ -97,6 +104,7 @@ private:
 
     mqtt.publish("beacon", result.mac);
   }
+#endif
 
   void main_task()
   {
@@ -107,7 +115,9 @@ private:
     wifi.system_event_signal().connect(os::Slot<void(system_event_t)>(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1)));
     wifi.connected().connect(os::Slot<void(bool)>(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1)));
 
+#ifdef  CONFIG_BT_ENABLED
     beacon_scanner.scan_result_signal().connect(os::Slot<void(os::BeaconScanner::ScanResult)>(loop, std::bind(&Main::on_beacon_scanner_scan_result, this, std::placeholders::_1)));
+#endif
 
     wifi.connect();
 
@@ -117,7 +127,9 @@ private:
     loop.run();
   }
 
+#ifdef  CONFIG_BT_ENABLED
   os::BeaconScanner &beacon_scanner;
+#endif
   os::Wifi &wifi;
   os::MainLoop loop;
   os::Task task;
