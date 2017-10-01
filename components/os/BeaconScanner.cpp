@@ -152,7 +152,7 @@ BeaconScanner::deinit()
 {
   esp_bluedroid_disable();
   esp_bluedroid_deinit();
-  esp_bt_controller_disable(ESP_BT_MODE_BTDM);
+  esp_bt_controller_disable();
   esp_bt_controller_deinit();
 }
 
