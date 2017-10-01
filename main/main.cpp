@@ -28,6 +28,10 @@
 #include "os/MainLoop.hpp"
 #include "os/Mqtt.hpp"
 
+extern "C"
+{
+#include "esp_heap_caps.h"
+}
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "nvs_flash.h"
@@ -128,6 +132,7 @@ private:
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 #endif
 
+    heap_caps_print_heap_info(0);
     loop.run();
   }
 
@@ -150,6 +155,7 @@ app_main()
 {
   nvs_flash_init();
 
+  heap_caps_print_heap_info(0);
   new Main();
   while(1)
     {
