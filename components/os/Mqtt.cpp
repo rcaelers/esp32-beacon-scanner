@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <string.h>
-
 #include "os/Mqtt.hpp"
+
+#ifdef CONFIG_AWS_IOT_SDK
+
+#include <string.h>
 
 using namespace os;
 
@@ -204,3 +206,5 @@ Mqtt::connected()
 {
   return connected_property;
 }
+
+#endif

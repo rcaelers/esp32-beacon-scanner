@@ -102,7 +102,9 @@ private:
     led_state ^= 1;
     gpio_set_level(LED_GPIO, led_state);
 
+#ifdef CONFIG_AWS_IOT_SDK
     mqtt.publish("beacon", result.mac);
+#endif
   }
 #endif
 
@@ -121,8 +123,10 @@ private:
 
     wifi.connect();
 
+#ifdef CONFIG_AWS_IOT_SDK
     mqtt.connected().connect(os::Slot<void(bool)>(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1)));
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+#endif
 
     loop.run();
   }
@@ -133,7 +137,9 @@ private:
   os::Wifi &wifi;
   os::MainLoop loop;
   os::Task task;
+#ifdef CONFIG_AWS_IOT_SDK
   os::Mqtt mqtt;
+#endif
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };

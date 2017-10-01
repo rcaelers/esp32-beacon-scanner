@@ -21,6 +21,10 @@
 #ifndef OS_MQTT_HPP
 #define OS_MQTT_HPP
 
+#include "sdkconfig.h"
+
+#ifdef CONFIG_AWS_IOT_SDK
+
 #include <chrono>
 #include <string>
 #include <queue>
@@ -82,5 +86,7 @@ namespace os
     std::queue<msg_type> queue;
   };
 }
+
+#endif
 
 #endif // OS_MQTT_HPP
