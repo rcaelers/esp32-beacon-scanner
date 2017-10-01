@@ -41,7 +41,7 @@ static esp_ble_scan_params_t ble_scan_params = {
 };
 
 BeaconScanner::BeaconScanner()
-  : task("beaconscanner_task", std::bind(&BeaconScanner::bt_task, this))
+  : task("beaconscanner_task", std::bind(&BeaconScanner::bt_task, this), os::Task::CoreId::NoAffinity, 2048)
 {
 }
 
