@@ -1,4 +1,8 @@
 PROJECT_NAME := beacon-scanner
 
 include $(IDF_PATH)/make/project.mk
+
+CFLAGS += -DLWIP_NETIF_LOOPBACK=1
+CFLAGS += -DLWIP_LOOPBACK_MAX_PBUFS=8
+CFLAGS += -DLWIP_NETIF_LOOPBACK_MULTITHREADING=1
 CXXFLAGS += -std=gnu++14 -fexceptions -frtti

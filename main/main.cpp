@@ -27,6 +27,8 @@
 #include "os/Task.hpp"
 #include "os/MainLoop.hpp"
 #include "os/Mqtt.hpp"
+#include "os/TLSStream.hpp"
+#include "os/SocketReactor.hpp"
 
 extern "C"
 {
@@ -67,11 +69,44 @@ private:
     ESP_LOGI(tag, "-> System event %d", event.event_id);
   }
 
+  void on_socket_io()
+  {
+    try
+      {
+        ESP_LOGI(tag, "on_socket_io");
+        unsigned char buf[200];
+
+        size_t bytes_read = 0;
+        sock.read(buf, sizeof(buf), bytes_read);
+
+        if (bytes_read == 0)
+          {
+            sock.close();
+          }
+        ESP_LOGI(tag, "on_socket_io: read %d", bytes_read);
+      }
+    catch(...)
+      {
+        ESP_LOGI(tag, "on_socket_io: exception");
+        sock.close();
+      }
+  }
+
   void on_wifi_connected(bool connected)
   {
     if (connected)
       {
         ESP_LOGI(tag, "-> Wifi connected");
+        try
+          {
+            // TODO: not yet possible: cannot connect after loop has started.
+            // sock.io_callback().set(os::Slot<void()>(loop, std::bind(&Main::on_socket_io, this)));
+            sock.connect(MQTT_HOST, 8883);
+          }
+        catch(std::exception &e)
+          {
+            ESP_LOGE(tag, "Socket connect exception: %s", e.what());
+          }
       }
     else
       {
@@ -132,6 +167,16 @@ private:
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 #endif
 
+    try
+      {
+        sock.set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+        sock.set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+        sock.io_callback().set(os::Slot<void()>(loop, std::bind(&Main::on_socket_io, this)));
+      }
+    catch(std::exception &e)
+      {
+        ESP_LOGE(tag, "Socket exception: %s", e.what());
+      }
     heap_caps_print_heap_info(0);
     loop.run();
   }
@@ -145,6 +190,7 @@ private:
 #ifdef CONFIG_AWS_IOT_SDK
   os::Mqtt mqtt;
 #endif
+  os::TLSStream sock;
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };
@@ -157,6 +203,7 @@ app_main()
 
   heap_caps_print_heap_info(0);
   new Main();
+
   while(1)
     {
       vTaskDelay(1000 / portTICK_PERIOD_MS);

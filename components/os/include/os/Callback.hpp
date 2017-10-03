@@ -18,76 +18,81 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef OS_SIGNAL_HPP
-#define OS_SIGNAL_HPP
-
-#include <list>
-#include <deque>
+#ifndef OS_CALLBACK_HPP
+#define OS_CALLBACK_HPP
 
 #include "os/Slot.hpp"
 #include "os/Mutex.hpp"
 #include "os/ScopedLock.hpp"
 
+#include "os/optional.hpp"
+
 namespace os
 {
   template <class T>
-  class Signal;
+  class Callback;
 
   template<class... Args>
-  class Signal<void(Args...)>
+  class Callback<void(Args...)>
   {
   public:
     using slot_type = os::Slot<void(Args...)>;
 
-    Signal() = default;
-    ~Signal() = default;
+    Callback() = default;
+    ~Callback() = default;
 
-    Signal(const Signal&) = delete;
-    Signal& operator=(const Signal&) = delete;
+    Callback(const Callback&) = delete;
+    Callback& operator=(const Callback&) = delete;
 
-    Signal(Signal &&lhs)
+    Callback(Callback &&lhs)
       : mutex(std::move(lhs.mutex)),
-        slots(std::move(lhs.slots))
+        callback(std::move(lhs.callback))
     {
     }
 
-    Signal &operator=(Signal &&lhs)
+    Callback &operator=(Callback &&lhs)
     {
       if (this != &lhs)
         {
           mutex = std::move(lhs.mutex);
-          slots = std::move(lhs.slots);
+          callback = std::move(lhs.callback);
         }
       return *this;
     }
 
-    void connect(const slot_type &slot)
+    void set(const slot_type &slot)
     {
       ScopedLock l(mutex);
-      slots.push_back(slot);
-      slots.back().activate();
+      callback = slot;
+      callback->activate();
     }
 
-    void connect(slot_type &&slot)
+    void set(slot_type &&slot)
     {
       ScopedLock l(mutex);
-      slots.push_back(std::move(slot));
-      slots.back().activate();
+      callback.emplace(std::move(slot));
+      callback->activate();
+    }
+
+    void unset()
+    {
+      ScopedLock l(mutex);
+      callback.reset();
     }
 
     void operator()(const Args &... args)
     {
       ScopedLock l(mutex);
-      for (auto &slot : slots)
+      if (callback)
         {
-          slot.operator()(args...);
+          callback->operator()(args...);
         }
     }
 
   private:
     mutable os::Mutex mutex;
-    std::deque<slot_type> slots;
+    nonstd::optional<slot_type> callback;
   };
 }
 
-#endif // OS_SIGNAL_HPP
+#endif // OS_CALLBACK_HPP

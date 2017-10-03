@@ -183,7 +183,6 @@ namespace os
       return consume_sem.native_handle();
     }
 
-
   private:
     os::Mutex mutex;
     os::Semaphore produce_sem;
