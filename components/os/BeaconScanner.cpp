@@ -41,8 +41,8 @@ static esp_ble_scan_params_t ble_scan_params = {
 };
 
 BeaconScanner::BeaconScanner()
-  : task("beaconscanner_task", std::bind(&BeaconScanner::bt_task, this), os::Task::CoreId::NoAffinity, 2048)
 {
+  init();
 }
 
 BeaconScanner::~BeaconScanner()
@@ -120,7 +120,7 @@ BeaconScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_pa
           case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
             ESP_LOGI(tag, "Scan completed, restarting.");
             signal_scan_complete();
-            xEventGroupSetBits(event_group, RESTART_BIT);
+            esp_ble_gap_set_scan_params(&ble_scan_params);
             break;
           }
 
@@ -138,14 +138,14 @@ BeaconScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_pa
 void
 BeaconScanner::init()
 {
+  ESP_LOGI(tag, "BeaconScanner::init");
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+
+  esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
   esp_bt_controller_init(&bt_cfg);
   esp_bt_controller_enable(ESP_BT_MODE_BLE);
-  esp_bt_controller_mem_release(ESP_BT_MODE_BTDM);
   esp_bluedroid_init();
   esp_bluedroid_enable();
-
-  event_group = xEventGroupCreate();
 }
 
 void
@@ -160,8 +160,6 @@ BeaconScanner::deinit()
 void
 BeaconScanner::start()
 {
-  xEventGroupWaitBits(event_group, READY_BIT, false, true, portMAX_DELAY);
-
   esp_ble_gap_register_callback(gap_event_handler_static);
   esp_ble_gap_set_scan_params(&ble_scan_params);
 }
@@ -170,23 +168,6 @@ void
 BeaconScanner::stop()
 {
   esp_ble_gap_stop_scanning();
-}
-
-// TODO: remove this BLE stack restart workaround once ESP-IDF BLE is stable
-void
-BeaconScanner::bt_task()
-{
-  init();
-  xEventGroupSetBits(event_group, READY_BIT);
-  while (1)
-    {
-      xEventGroupWaitBits(event_group, RESTART_BIT, true, true, portMAX_DELAY);
-      // TODO: stop/start during re-init may not be safe.
-      esp_bluedroid_disable();
-      esp_bluedroid_enable();
-      esp_ble_gap_register_callback(gap_event_handler_static);
-      esp_ble_gap_set_scan_params(&ble_scan_params);
-    }
 }
 
 os::Signal<void()> &

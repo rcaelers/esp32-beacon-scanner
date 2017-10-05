@@ -117,12 +117,8 @@ namespace os
     os::Signal<void(ScanResult)> signal_scan_result;
 
     mutable os::Mutex mutex;
-    EventGroupHandle_t event_group;
-    os::Task task;
 
     const static int scan_duration = 10;
-    const static int RESTART_BIT = BIT0;
-    const static int READY_BIT = BIT1;
   };
 }
 
