@@ -25,8 +25,14 @@
 
 namespace os
 {
+  class ClosureBase
+  {
+  public:
+    virtual void operator()() = 0;
+  };
+
   template<typename F, typename... Args>
-  class Closure
+  class Closure : public ClosureBase
   {
   public:
     using function_type = std::function<void(Args...)>;

@@ -64,14 +64,12 @@ namespace os
     {
       ScopedLock l(mutex);
       callback = slot;
-      callback->activate();
     }
 
     void set(slot_type &&slot)
     {
       ScopedLock l(mutex);
       callback.emplace(std::move(slot));
-      callback->activate();
     }
 
     void unset()
@@ -85,7 +83,7 @@ namespace os
       ScopedLock l(mutex);
       if (callback)
         {
-          callback->operator()(args...);
+          callback->publish(args...);
         }
     }
 
@@ -93,6 +91,7 @@ namespace os
     mutable os::Mutex mutex;
     nonstd::optional<slot_type> callback;
   };
+
 }
 
 #endif // OS_CALLBACK_HPP

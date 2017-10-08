@@ -37,19 +37,16 @@ namespace os
     using closure_type = os::Closure<callback_type, Args...>;
 
   public:
-    Slot(os::MainLoop &loop, callback_type callback, int size = 10)
-      : loop(loop), queue(size), callback(callback)
+    Slot(os::MainLoop &loop, callback_type callback)
+      : loop(loop), callback(callback)
     {
     }
 
     Slot(const Slot&) = delete;
     Slot &operator=(const Slot&) = delete;
 
-    // TODO: re-register slot at queue when slot is moved.
-
     Slot(Slot &&lhs)
       : loop(lhs.loop),
-        queue(std::move(lhs.queue)),
         callback(std::move(lhs.callback))
     {
     }
@@ -59,35 +56,18 @@ namespace os
       if (this != &lhs)
         {
           loop = lhs.loop;
-          queue = std::move(lhs.queue);
           callback = std::move(lhs.callback);
         }
       return *this;
     }
 
-    void operator()(Args... args)
+    void publish(Args... args)
     {
-      queue.emplace(callback, std::move(args)...);
-    }
-
-    void activate()
-    {
-      // TODO: Slot can no longer be moved once activated.
-      loop.register_queue(queue, std::bind(&Slot<void(Args...)>::execute, this));
-    }
-
-    void execute()
-    {
-      nonstd::optional<closure_type> obj(queue.pop());
-      if (obj)
-      {
-        (*obj)();
-      }
+      loop.post(std::make_shared<closure_type>(callback, std::move(args)...));
     }
 
   private:
     os::MainLoop &loop;
-    os::Queue<closure_type> queue;
     std::function<void(Args...)> callback;
   };
 }

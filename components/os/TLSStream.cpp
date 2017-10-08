@@ -26,7 +26,6 @@
 #include <system_error>
 
 #include "os/TLSStream.hpp"
-#include "os/SocketReactor.hpp"
 
 extern "C"
 {
@@ -59,9 +58,9 @@ TLSStream::~TLSStream()
 {
   if (server_fd.fd != -1)
     {
-      SocketReactor &reactor = SocketReactor::instance();
-      reactor.unnotify_read(server_fd.fd);
-      reactor.unnotify_write(server_fd.fd);
+      MainLoop *loop = MainLoop::current();
+      assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
+      loop->unnotify(server_fd.fd);
     }
 
   mbedtls_net_free(&server_fd);
@@ -171,9 +170,9 @@ TLSStream::connect(const std::string &hostname, int port)
   ret = mbedtls_net_set_nonblock(&server_fd);
   throw_if_failure("mbedtls_net_set_nonblock", ret);
 
-  SocketReactor &reactor = SocketReactor::instance();
-  reactor.notify_read(server_fd.fd, [&]() { on_readable(); });
-  //reactor.notify_write(server_fd.fd, [&]() { on_writable(); });
+  MainLoop *loop = MainLoop::current();
+  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
+  loop->notify_read(server_fd.fd, [&]() { on_readable(); });
 }
 
 void
@@ -183,8 +182,9 @@ TLSStream::read(unsigned char *data, size_t count, size_t &bytes_read)
   int ret = mbedtls_ssl_read(&ssl, data, count);
 
   // TODO: remove/cleanup hack
-  SocketReactor &reactor = SocketReactor::instance();
-  reactor.notify_read(server_fd.fd, [&]() { on_readable(); });
+  MainLoop *loop = MainLoop::current();
+  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
+  loop->notify_read(server_fd.fd, [&]() { on_readable(); });
 
   if (ret > 0)
     {
@@ -225,9 +225,9 @@ TLSStream::write(unsigned char *data, size_t count, size_t &written)
 void
 TLSStream::close()
 {
-  SocketReactor &reactor = SocketReactor::instance();
-  reactor.unnotify_read(server_fd.fd);
-  reactor.unnotify_write(server_fd.fd);
+  MainLoop *loop = MainLoop::current();
+  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
+  loop->unnotify(server_fd.fd);
 
   int ret = 0;
   do
@@ -273,10 +273,6 @@ void
 TLSStream::on_readable()
 {
   ESP_LOGD(tag, "on_readable");
-  // TODO: Fix this hack. The callback is handled asynchrounously from the socketreactor.
-  // So the socketreactor must skip this socket until something was read.
-  SocketReactor &reactor = SocketReactor::instance();
-  reactor.unnotify_read(server_fd.fd);
   callback_io();
 }
 

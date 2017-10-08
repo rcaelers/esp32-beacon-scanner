@@ -21,49 +21,74 @@
 #ifndef OS_MAINLOOP_HPP
 #define OS_MAINLOOP_HPP
 
+#include <chrono>
 #include <functional>
+#include <list>
 #include <map>
+#include <memory>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
+#include "os/Closure.hpp"
 #include "os/Queue.hpp"
+#include "os/Trigger.hpp"
+#include "os/ThreadLocal.hpp"
 
 namespace os
 {
   class MainLoop
   {
   public:
+    using io_callback = std::function<void()>;
     using queue_callback = std::function<void ()>;
 
     MainLoop() = default;
-    ~MainLoop() = default;
+    ~MainLoop();
 
     MainLoop(const MainLoop&) = delete;
     MainLoop &operator=(const MainLoop&) = delete;
     MainLoop(MainLoop&&) = delete;
     MainLoop &operator=(MainLoop&&) = delete;
 
-    // TODO: Create more generic function for registering event sources (like glib's GSource).
-    template<class T>
-    void register_queue(os::Queue<T> &queue, queue_callback fn)
-    {
-      assert(queue_set == nullptr && "Cannot add new queues once the main loop has started.");
+    static MainLoop *current();
 
-      queues[queue.native_handle()] = fn;
-      total_size += queue.size();
-    }
-
-    void terminate();
+    void post(std::shared_ptr<ClosureBase> closure);
+    void notify_read(int fd, io_callback read_cb);
+    void notify_write(int fd, io_callback write_cb);
+    void unnotify_read(int fd);
+    void unnotify_write(int fd);
+    void unnotify(int fd);
     void run();
+    void terminate();
 
   private:
-    void prepare();
+    enum class IoType { Read, Write };
+    struct PollData
+    {
+      int fd;
+      IoType type;
+      io_callback callback;
+    };
+    using poll_list_type = std::list<PollData>;
+
+    poll_list_type::iterator find(int fd, IoType type);
+
+    void notify(int fd, IoType type, io_callback cb);
+    void unnotify(int fd, IoType type);
+
+    int init_fd_set(poll_list_type &pollfds_copy, fd_set &read_set, fd_set &write_set);
+    poll_list_type copy_poll_list() const;
+
+    void process_queue();
+
+    static ThreadLocal<MainLoop> &get_thread_local();
 
   private:
-    std::map<SemaphoreHandle_t, queue_callback> queues;
-    int total_size = 0;
-    QueueSetHandle_t queue_set = nullptr;
+    mutable os::Mutex poll_list_mutex;
+    poll_list_type poll_list;
+    os::Queue<std::shared_ptr<os::ClosureBase>> queue;
+    os::Trigger trigger;
   };
 }
 

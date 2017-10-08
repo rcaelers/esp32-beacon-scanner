@@ -18,73 +18,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef OS_SIGNAL_HPP
-#define OS_SIGNAL_HPP
+#ifndef OS_THREADLOCAL_HPP
+#define OS_THREADLOCAL_HPP
 
-#include <list>
+#include <unordered_map>
 
-#include "os/Slot.hpp"
 #include "os/Mutex.hpp"
 #include "os/ScopedLock.hpp"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 namespace os
 {
-  template <class T>
-  class Signal;
-
-  template<class... Args>
-  class Signal<void(Args...)>
+  template<typename T>
+  class ThreadLocal
   {
   public:
-    using slot_type = os::Slot<void(Args...)>;
-
-    Signal() = default;
-    ~Signal() = default;
-
-    Signal(const Signal&) = delete;
-    Signal& operator=(const Signal&) = delete;
-
-    Signal(Signal &&lhs)
-      : mutex(std::move(lhs.mutex)),
-        slots(std::move(lhs.slots))
+    void set(T* obj)
     {
+      ScopedLock l(mutex);
+      TaskHandle_t handle = xTaskGetCurrentTaskHandle();
+      objects[handle] = obj;
     }
 
-    Signal &operator=(Signal &&lhs)
+    T* get()
     {
-      if (this != &lhs)
+      ScopedLock l(mutex);
+      TaskHandle_t handle = xTaskGetCurrentTaskHandle();
+      if (objects.find(handle) != objects.end())
         {
-          mutex = std::move(lhs.mutex);
-          slots = std::move(lhs.slots);
+          return objects[handle];
         }
-      return *this;
+      return nullptr;
     }
 
-    void connect(const slot_type &slot)
+    void remove()
     {
       ScopedLock l(mutex);
-      slots.push_back(slot);
-    }
-
-    void connect(slot_type &&slot)
-    {
-      ScopedLock l(mutex);
-      slots.push_back(std::move(slot));
-    }
-
-    void operator()(const Args &... args)
-    {
-      ScopedLock l(mutex);
-      for (auto &slot : slots)
-        {
-          slot.publish(args...);
-        }
+      objects.erase(xTaskGetCurrentTaskHandle());
     }
 
   private:
-    mutable os::Mutex mutex;
-    std::list<slot_type> slots;
+    os::Mutex mutex;
+    std::unordered_map<TaskHandle_t, T*> objects;
   };
 }
 
-#endif // OS_SIGNAL_HPP
+#endif // OS_THREADLOCAL_HPP

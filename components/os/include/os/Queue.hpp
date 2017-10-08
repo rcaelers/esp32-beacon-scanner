@@ -36,17 +36,14 @@ namespace os
   class Queue
   {
   public:
-    Queue(int max_size)
+    Queue(int max_size = 100)
       : produce_sem(max_size, max_size),
         consume_sem(max_size, 0),
         max_size(max_size)
     {
     }
 
-    ~Queue()
-    {
-    }
-
+    ~Queue() = default;
     Queue(const Queue&) = delete;
     Queue &operator=(const Queue&) = delete;
 
@@ -74,10 +71,10 @@ namespace os
 
     bool push(const T &obj)
     {
-      return push(obj, std::chrono::milliseconds(portMAX_DELAY));
+      return push_for(obj, std::chrono::milliseconds(portMAX_DELAY));
     }
 
-    bool push(const T &obj, std::chrono::milliseconds timeout_duration)
+    bool push_for(const T &obj, std::chrono::milliseconds timeout_duration)
     {
       bool ok = produce_sem.take(timeout_duration);
       if (ok)
@@ -90,13 +87,31 @@ namespace os
       return ok;
     }
 
+    bool push(T &&obj)
+    {
+      return push_for(std::move(obj), std::chrono::milliseconds(portMAX_DELAY));
+    }
+
+    bool push_for(T &&obj, std::chrono::milliseconds timeout_duration)
+    {
+      bool ok = produce_sem.take(timeout_duration);
+      if (ok)
+        {
+          {
+            ScopedLock l(mutex);
+            queue_data.push_back(std::move(obj));
+          }
+          consume_sem.give();
+        }
+      return ok;
+    }
+
     template <class... Args>
     bool emplace(Args&&... args)
     {
       return emplace_for(std::chrono::milliseconds(portMAX_DELAY), std::forward<Args>(args)...);
     }
 
-    // TODO: fix inconsistent API
     template <class... Args>
     bool emplace_for(std::chrono::milliseconds timeout_duration, Args&&... args)
     {
@@ -112,31 +127,12 @@ namespace os
       return ok;
     }
 
-    bool push(T &&obj)
-    {
-      return push(std::move(obj), std::chrono::milliseconds(portMAX_DELAY));
-    }
-
-    bool push(T &&obj, std::chrono::milliseconds timeout_duration)
-    {
-      bool ok = produce_sem.take(timeout_duration);
-      if (ok)
-        {
-          {
-            ScopedLock l(mutex);
-            queue_data.push_back(std::move(obj));
-          }
-          consume_sem.give();
-        }
-      return ok;
-    }
-
     bool pop(T &obj)
     {
-      return pop(obj, std::chrono::milliseconds(portMAX_DELAY));
+      return pop_for(obj, std::chrono::milliseconds(portMAX_DELAY));
     }
 
-    bool pop(T &obj, std::chrono::milliseconds timeout_duration)
+    bool pop_for(T &obj, std::chrono::milliseconds timeout_duration)
     {
       bool ok = consume_sem.take(timeout_duration);
       if (ok)
@@ -153,10 +149,10 @@ namespace os
 
     nonstd::optional<T> pop()
     {
-      return pop(std::chrono::milliseconds(portMAX_DELAY));
+      return pop_for(std::chrono::milliseconds(portMAX_DELAY));
     }
 
-    nonstd::optional<T> pop(std::chrono::milliseconds timeout_duration)
+    nonstd::optional<T> pop_for(std::chrono::milliseconds timeout_duration)
     {
       bool ok = consume_sem.take(timeout_duration);
       nonstd::optional<T> ret;
@@ -175,12 +171,8 @@ namespace os
 
     int size() const
     {
-      return max_size;
-    }
-
-    os::Semaphore::native_handle_type native_handle()
-    {
-      return consume_sem.native_handle();
+      ScopedLock l(mutex);
+      return queue_data.size();
     }
 
   private:
