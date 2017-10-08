@@ -52,7 +52,8 @@ MainLoop::post(std::shared_ptr<ClosureBase> closure)
 void
 MainLoop::terminate()
 {
-  // TODO: implement
+  terminate_loop = true;
+  trigger.signal();
 }
 
 MainLoop *

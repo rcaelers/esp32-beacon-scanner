@@ -89,6 +89,7 @@ namespace os
     poll_list_type poll_list;
     os::Queue<std::shared_ptr<os::ClosureBase>> queue;
     os::Trigger trigger;
+    bool terminate_loop = false;
   };
 }
 
