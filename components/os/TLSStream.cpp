@@ -181,11 +181,6 @@ TLSStream::read(unsigned char *data, size_t count, size_t &bytes_read)
   bytes_read = 0;
   int ret = mbedtls_ssl_read(&ssl, data, count);
 
-  // TODO: remove/cleanup hack
-  MainLoop *loop = MainLoop::current();
-  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
-  loop->notify_read(server_fd.fd, [&]() { on_readable(); });
-
   if (ret > 0)
     {
       bytes_read = ret;
