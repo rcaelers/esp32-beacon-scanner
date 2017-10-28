@@ -62,6 +62,11 @@ namespace os
     void run();
     void terminate();
 
+    void post(std::function<void()> func)
+    {
+      post(std::make_shared<os::FunctionClosure<void ()>>(func));
+    }
+
   private:
     enum class IoType { Read, Write };
     struct PollData
