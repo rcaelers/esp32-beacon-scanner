@@ -31,6 +31,27 @@ namespace os
     virtual void operator()() = 0;
   };
 
+  template<typename F>
+  class FunctionClosure : public ClosureBase
+  {
+  public:
+    FunctionClosure() = default;
+    ~FunctionClosure() = default;
+
+    FunctionClosure(std::function<F> fn) :
+      fn(fn)
+    {
+    }
+
+    void operator()()
+    {
+      fn();
+    }
+
+  private:
+    std::function<F> fn;
+  };
+
   template<typename F, typename... Args>
   class Closure : public ClosureBase
   {
