@@ -68,7 +68,6 @@ Wifi::connect()
 {
   ESP_LOGI(tag, "Connecting");
 
-  // TODO: move event loop to separate class.
   esp_event_loop_init(&Wifi::on_sysem_event, this);
 
   wifi_init_config_t init = WIFI_INIT_CONFIG_DEFAULT();
