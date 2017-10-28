@@ -22,6 +22,7 @@
 #define OS_SCOPED_LOCK_HPP
 
 #include "os/LockGuard.hpp"
+#include "os/Mutex.hpp"
 
 namespace os
 {
