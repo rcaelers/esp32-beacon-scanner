@@ -56,7 +56,6 @@ namespace os
   class Closure : public ClosureBase
   {
   public:
-    using function_type = std::function<void(Args...)>;
     using tuple_type = std::tuple<Args...>;
 
     Closure() = default;
@@ -113,7 +112,7 @@ namespace os
     }
 
   private:
-    function_type fn;
+    F fn;
     std::tuple<Args...> args;
   };
 
