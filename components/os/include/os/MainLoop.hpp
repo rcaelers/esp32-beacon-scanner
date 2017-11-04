@@ -26,6 +26,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <system_error>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -46,8 +47,7 @@ namespace os
   class MainLoop : public std::enable_shared_from_this<MainLoop>
   {
   public:
-    using io_callback = std::function<void()>;
-    using queue_callback = std::function<void ()>;
+    using io_callback = std::function<void(std::error_code ec)>;
 
     MainLoop() = default;
     ~MainLoop();
@@ -60,8 +60,9 @@ namespace os
     static std::shared_ptr<MainLoop> current();
 
     void post(std::shared_ptr<ClosureBase> closure);
-    void notify_read(int fd, io_callback read_cb);
-    void notify_write(int fd, io_callback write_cb);
+
+    void notify_read(int fd, io_callback read_cb, std::chrono::milliseconds timeout_duration = std::chrono::milliseconds::max());
+    void notify_write(int fd, io_callback write_cb, std::chrono::milliseconds timeout_duration = std::chrono::milliseconds::max());
     void unnotify_read(int fd);
     void unnotify_write(int fd);
     void unnotify(int fd);
@@ -79,16 +80,18 @@ namespace os
     {
       int fd;
       IoType type;
+      std::chrono::milliseconds timeout_duration;
+      std::chrono::system_clock::time_point start_time;
       io_callback callback;
     };
     using poll_list_type = std::list<PollData>;
 
     poll_list_type::iterator find(int fd, IoType type);
 
-    void notify(int fd, IoType type, io_callback cb);
+    void notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds timeout_duration);
     void unnotify(int fd, IoType type);
 
-    int init_fd_set(poll_list_type &pollfds_copy, fd_set &read_set, fd_set &write_set);
+    int do_select(poll_list_type &pollfds_copy, fd_set &read_set, fd_set &write_set);
     poll_list_type copy_poll_list() const;
 
     void process_queue();

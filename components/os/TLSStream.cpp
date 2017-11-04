@@ -172,7 +172,7 @@ TLSStream::connect(const std::string &hostname, int port)
 
   std::shared_ptr<MainLoop> loop = MainLoop::current();
   assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
-  loop->notify_read(server_fd.fd, [&]() { on_readable(); });
+  loop->notify_read(server_fd.fd, [&](std::error_code ec) { on_readable(); });
 }
 
 void

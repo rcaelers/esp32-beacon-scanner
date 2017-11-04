@@ -31,6 +31,8 @@
 
 #include "esp_log.h"
 
+#include "os/Errors.hpp"
+
 #undef bind
 
 static const char tag[] = "MAINLOOP";
@@ -70,15 +72,15 @@ MainLoop::get_thread_local()
 }
 
 void
-MainLoop::notify_read(int fd, io_callback cb)
+MainLoop::notify_read(int fd, io_callback cb, std::chrono::milliseconds timeout_duration)
 {
-  notify(fd, IoType::Read, cb);
+  notify(fd, IoType::Read, cb, timeout_duration);
 }
 
 void
-MainLoop::notify_write(int fd, io_callback cb)
+MainLoop::notify_write(int fd, io_callback cb, std::chrono::milliseconds timeout_duration)
 {
-  notify(fd, IoType::Write, cb);
+  notify(fd, IoType::Write, cb, timeout_duration);
 }
 
 void
@@ -111,7 +113,7 @@ MainLoop::find(int fd, IoType type)
 }
 
 void
-MainLoop::notify(int fd, IoType type, io_callback cb)
+MainLoop::notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds timeout_duration)
 {
   ScopedLock l(poll_list_mutex);
   auto iter = find(fd, type);
@@ -119,6 +121,8 @@ MainLoop::notify(int fd, IoType type, io_callback cb)
   if (iter != poll_list.end())
     {
       iter->callback = cb;
+      iter->start_time = std::chrono::system_clock::now();
+      iter->timeout_duration = timeout_duration;
     }
   else
     {
@@ -126,6 +130,8 @@ MainLoop::notify(int fd, IoType type, io_callback cb)
       pd.fd = fd;
       pd.type = type;
       pd.callback = cb;
+      pd.start_time = std::chrono::system_clock::now();
+      pd.timeout_duration = timeout_duration;
       poll_list.push_back(pd);
     }
   trigger.signal();
@@ -145,7 +151,7 @@ MainLoop::unnotify(int fd, IoType type)
 }
 
 int
-MainLoop::init_fd_set(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &write_set)
+MainLoop::do_select(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &write_set)
 {
   FD_ZERO(&read_set);
   FD_ZERO(&write_set);
@@ -154,10 +160,19 @@ MainLoop::init_fd_set(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &
   int max_fd = trigger_fd;
   FD_SET(trigger_fd, &read_set);
 
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  std::chrono::milliseconds timeout = std::chrono::milliseconds::max();
+
   ScopedLock l(poll_list_mutex);
   for (auto &pd : poll_list_copy)
     {
       max_fd = std::max(max_fd, pd.fd);
+
+      if (pd.timeout_duration != std::chrono::milliseconds::max())
+        {
+          auto t = std::chrono::duration_cast<std::chrono::milliseconds>(pd.start_time - now + pd.timeout_duration);
+          timeout = std::max(std::chrono::milliseconds(0), std::min(timeout, t));
+        }
 
       switch (pd.type)
         {
@@ -170,7 +185,22 @@ MainLoop::init_fd_set(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &
         }
     }
 
-  return max_fd;
+  int r = 0;
+
+  if (timeout != std::chrono::milliseconds::max())
+    {
+      timeval tv;
+      tv.tv_sec = timeout.count() / 1000;
+      tv.tv_usec = (timeout.count() % 1000) / 1000;
+      int d = timeout.count();
+      r = select(max_fd + 1, &read_set, &write_set, nullptr, &tv);
+    }
+  else
+    {
+      r = select(max_fd + 1, &read_set, &write_set, nullptr, nullptr);
+    }
+
+  return r;
 }
 
 MainLoop::poll_list_type
@@ -191,40 +221,61 @@ MainLoop::run()
       fd_set read_set;
       fd_set write_set;
 
-      int max_fd = init_fd_set(poll_list_copy, read_set, write_set);
-      int r = select(max_fd + 1, &read_set, &write_set, nullptr, nullptr);
+      int r = do_select(poll_list_copy, read_set, write_set);
 
       if (r == -1)
         {
           const char* error = strerror(errno);
           ESP_LOGE(tag, "Error during select: %s", error);
         }
+      else if (r == 0)
+        {
+          std::error_code ec;
+          std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 
+          for (auto &pd : poll_list_copy)
+            {
+              unnotify(pd.fd, pd.type);
+
+              if (pd.timeout_duration != std::chrono::milliseconds::max() &&
+                  pd.start_time + pd.timeout_duration >= now)
+                {
+                  ESP_LOGE(tag, "Timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+                  try
+                    {
+                      pd.callback(os::NetworkErrc::Timeout);
+                    }
+                  catch(...)
+                    {
+                      ESP_LOGE(tag, "Exception while handling timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+                    }
+                }
+            }
+        }
       else if (r > 0)
         {
+          std::error_code ec;
+          for (auto &pd : poll_list_copy)
+            {
+              if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
+                   (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)))
+                {
+                  unnotify(pd.fd, pd.type);
+                  ESP_LOGD(tag, "Select for %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+                  try
+                    {
+                      pd.callback(ec);
+                    }
+                  catch(...)
+                    {
+                      ESP_LOGE(tag, "Exception while handling %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+                    }
+                }
+            }
           if (FD_ISSET(trigger.get_poll_fd(), &read_set))
             {
               process_queue();
               trigger.confirm();
-            }
-          else
-            {
-              for (auto &pd : poll_list_copy)
-                {
-                  if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
-                       (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)))
-                    {
-                      ESP_LOGD(tag, "Select for %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
-                      try
-                        {
-                          pd.callback();
-                        }
-                      catch(...)
-                        {
-                          ESP_LOGE(tag, "Exception while handling %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
-                        }
-                    }
-                }
             }
         }
     }
@@ -247,7 +298,7 @@ MainLoop::process_queue()
         }
       catch(...)
         {
-          ESP_LOGE(tag, "Exception while handling closure");
+          ESP_LOGE(tag, "Exception while handling invoked function");
         }
     };
 }
