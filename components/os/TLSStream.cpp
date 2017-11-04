@@ -58,7 +58,7 @@ TLSStream::~TLSStream()
 {
   if (server_fd.fd != -1)
     {
-      MainLoop *loop = MainLoop::current();
+      std::shared_ptr<MainLoop> loop = MainLoop::current();
       assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
       loop->unnotify(server_fd.fd);
     }
@@ -170,7 +170,7 @@ TLSStream::connect(const std::string &hostname, int port)
   ret = mbedtls_net_set_nonblock(&server_fd);
   throw_if_failure("mbedtls_net_set_nonblock", ret);
 
-  MainLoop *loop = MainLoop::current();
+  std::shared_ptr<MainLoop> loop = MainLoop::current();
   assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
   loop->notify_read(server_fd.fd, [&]() { on_readable(); });
 }
@@ -220,7 +220,7 @@ TLSStream::write(unsigned char *data, size_t count, size_t &written)
 void
 TLSStream::close()
 {
-  MainLoop *loop = MainLoop::current();
+  std::shared_ptr<MainLoop> loop = MainLoop::current();
   assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
   loop->unnotify(server_fd.fd);
 

@@ -72,12 +72,18 @@ namespace os
       slots.push_back(std::move(slot));
     }
 
+    template <class... SlotArgs>
+    void connect(SlotArgs&&... args)
+    {
+      slots.emplace_back(std::forward<SlotArgs>(args)...);
+    }
+
     void operator()(const Args &... args)
     {
       ScopedLock l(mutex);
       for (auto &slot : slots)
         {
-          slot.publish(args...);
+          slot.call(args...);
         }
     }
 

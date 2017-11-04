@@ -35,9 +35,15 @@
 #include "os/Trigger.hpp"
 #include "os/ThreadLocal.hpp"
 
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+
+#undef connect
+#undef bind
+
 namespace os
 {
-  class MainLoop
+  class MainLoop : public std::enable_shared_from_this<MainLoop>
   {
   public:
     using io_callback = std::function<void()>;
@@ -51,7 +57,7 @@ namespace os
     MainLoop(MainLoop&&) = delete;
     MainLoop &operator=(MainLoop&&) = delete;
 
-    static MainLoop *current();
+    static std::shared_ptr<MainLoop> current();
 
     void post(std::shared_ptr<ClosureBase> closure);
     void notify_read(int fd, io_callback read_cb);
@@ -87,7 +93,7 @@ namespace os
 
     void process_queue();
 
-    static ThreadLocal<MainLoop> &get_thread_local();
+    static ThreadLocal<std::shared_ptr<MainLoop>> &get_thread_local();
 
   private:
     mutable os::Mutex poll_list_mutex;

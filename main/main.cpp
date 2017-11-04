@@ -56,6 +56,7 @@ public:
     beacon_scanner(os::BeaconScanner::instance()),
 #endif
     wifi(os::Wifi::instance()),
+    loop(std::make_shared<os::MainLoop>()),
     task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
@@ -182,14 +183,14 @@ private:
         ESP_LOGE(tag, "Socket exception: %s", e.what());
       }
     heap_caps_print_heap_info(0);
-    loop.run();
+    loop->run();
   }
 
 #ifdef  CONFIG_BT_ENABLED
   os::BeaconScanner &beacon_scanner;
 #endif
   os::Wifi &wifi;
-  os::MainLoop loop;
+  std::shared_ptr<os::MainLoop> loop;
   os::Task task;
 #ifdef CONFIG_AWS_IOT_SDK
   os::Mqtt mqtt;

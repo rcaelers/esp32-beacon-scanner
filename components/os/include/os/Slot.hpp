@@ -23,6 +23,7 @@
 
 #include "os/MainLoop.hpp"
 #include "os/Closure.hpp"
+#include "os/lambda.hpp"
 
 namespace os
 {
@@ -37,13 +38,13 @@ namespace os
     using closure_type = os::Closure<callback_type, Args...>;
 
   public:
-    Slot(os::MainLoop &loop, callback_type callback)
+    Slot(std::shared_ptr<os::MainLoop> loop, callback_type callback)
       : loop(loop), callback(callback)
     {
     }
 
-    Slot(const Slot&) = delete;
-    Slot &operator=(const Slot&) = delete;
+    Slot(const Slot&) = default;
+    Slot &operator=(const Slot&) = default;
 
     Slot(Slot &&lhs)
       : loop(lhs.loop),
@@ -61,13 +62,20 @@ namespace os
       return *this;
     }
 
-    void publish(Args... args)
+    void call(Args... args) const
     {
-      loop.post(std::make_shared<closure_type>(callback, std::move(args)...));
+      if (loop)
+        {
+          loop->post(std::make_shared<closure_type>(callback, std::move(args)...));
+        }
+      else
+        {
+          callback(std::move(args)...);
+        }
     }
 
   private:
-    os::MainLoop &loop;
+    std::shared_ptr<os::MainLoop> loop;
     std::function<void(Args...)> callback;
   };
 }

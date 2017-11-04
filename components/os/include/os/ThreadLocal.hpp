@@ -35,14 +35,14 @@ namespace os
   class ThreadLocal
   {
   public:
-    void set(T* obj)
+    void set(T obj)
     {
       ScopedLock l(mutex);
       TaskHandle_t handle = xTaskGetCurrentTaskHandle();
       objects[handle] = obj;
     }
 
-    T* get()
+    T get()
     {
       ScopedLock l(mutex);
       TaskHandle_t handle = xTaskGetCurrentTaskHandle();
@@ -61,7 +61,7 @@ namespace os
 
   private:
     os::Mutex mutex;
-    std::unordered_map<TaskHandle_t, T*> objects;
+    std::unordered_map<TaskHandle_t, T> objects;
   };
 }
 

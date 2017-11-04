@@ -56,16 +56,16 @@ MainLoop::terminate()
   trigger.signal();
 }
 
-MainLoop *
+std::shared_ptr<MainLoop>
 MainLoop::current()
 {
   return get_thread_local().get();
 }
 
-ThreadLocal<MainLoop> &
+ThreadLocal<std::shared_ptr<MainLoop>> &
 MainLoop::get_thread_local()
 {
-  static ThreadLocal<MainLoop> local;
+  static ThreadLocal<std::shared_ptr<MainLoop>> local;
   return local;
 }
 
@@ -183,7 +183,7 @@ MainLoop::copy_poll_list() const
 void
 MainLoop::run()
 {
-  get_thread_local().set(this);
+  get_thread_local().set(shared_from_this());
 
   while (true)
     {

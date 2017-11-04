@@ -83,7 +83,7 @@ namespace os
       ScopedLock l(mutex);
       if (callback)
         {
-          callback->publish(args...);
+          callback->call(args...);
         }
     }
 
