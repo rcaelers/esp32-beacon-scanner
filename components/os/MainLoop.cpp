@@ -192,7 +192,6 @@ MainLoop::do_select(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &wr
       timeval tv;
       tv.tv_sec = timeout.count() / 1000;
       tv.tv_usec = (timeout.count() % 1000) / 1000;
-      int d = timeout.count();
       r = select(max_fd + 1, &read_set, &write_set, nullptr, &tv);
     }
   else
