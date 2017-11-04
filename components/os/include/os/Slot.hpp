@@ -78,6 +78,15 @@ namespace os
     std::shared_ptr<os::MainLoop> loop;
     std::function<void(Args...)> callback;
   };
+
+  template<typename F>
+  auto make_slot(std::shared_ptr<os::MainLoop> loop, F &&func)
+  {
+    using fpointer_type = get_signature<F>;
+
+    return Slot<fpointer_type>(loop, std::forward<std::function<fpointer_type>>(func));
+  }
+
 }
 
 #endif // OS_SLOT_HPP
