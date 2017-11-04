@@ -32,7 +32,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
-#include "os/Task.hpp"
 #include "os/Signal.hpp"
 
 namespace os
