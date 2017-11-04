@@ -159,17 +159,17 @@ private:
     wifi.set_passphase(WIFI_PASS);
     wifi.set_host_name("scan");
     wifi.set_auto_connect(true);
-    wifi.system_event_signal().connect(os::Slot<void(system_event_t)>(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1)));
-    wifi.connected().connect(os::Slot<void(bool)>(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1)));
+    wifi.system_event_signal().connect(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1));
+    wifi.connected().connect(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1));
 
-#ifdef  CONFIG_BT_ENABLED
-    beacon_scanner.scan_result_signal().connect(os::Slot<void(os::BeaconScanner::ScanResult)>(loop, std::bind(&Main::on_beacon_scanner_scan_result, this, std::placeholders::_1)));
+#ifdef CONFIG_BT_ENABLED
+    beacon_scanner.scan_result_signal().connect(loop, std::bind(&Main::on_beacon_scanner_scan_result, this, std::placeholders::_1));
 #endif
 
     wifi.connect();
 
 #ifdef CONFIG_AWS_IOT_SDK
-    mqtt.connected().connect(os::Slot<void(bool)>(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1)));
+    mqtt.connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 #endif
 
