@@ -18,34 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef OS_ERRORS_HPP
-#define OS_ERRORS_HPP
+#ifndef OS_BUFEFR_HPP
+#define OS_BUFFER_HPP
 
-#include <system_error>
+#include <string>
 
 namespace os
 {
-  enum class NetworkErrc
+  class Buffer
+  {
+  public:
+    Buffer(std::string s) noexcept
+      : data_(s.size() ? reinterpret_cast<uint8_t *>(&s[0]) : nullptr), size_(s.size())
     {
-      // no 0
-      Timeout = 1,
-      InternalError,
-      NameResolutionFailed,
-      InvalidAddress,
-      TLSProtocolError,
-      ConnectionRefused,
-      ConnectionClosed,
-      ReadError,
-      WriteError,
-    };
+    }
 
-  std::error_code make_error_code(NetworkErrc);
+    Buffer(uint8_t *data, std::size_t size) noexcept
+      : data_(data), size_(size)
+    {
+    }
+
+    uint8_t *data() const noexcept
+    {
+      return data_;
+    }
+
+    std::size_t size() const noexcept
+    {
+      return size_;
+    }
+
+  private:
+    uint8_t *data_;
+    std::size_t size_;
+  };
 }
 
-namespace std
-{
-  template <>
-  struct is_error_code_enum<os::NetworkErrc> : true_type {};
-}
-
-#endif // OS_ERRORS_HPP
+#endif // OS_BUFFER_HPP

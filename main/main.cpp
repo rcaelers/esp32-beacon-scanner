@@ -27,7 +27,6 @@
 #include "os/Task.hpp"
 #include "os/MainLoop.hpp"
 #include "os/Mqtt.hpp"
-#include "os/TLSStream.hpp"
 
 extern "C"
 {
@@ -41,12 +40,6 @@ extern "C"
 
 static const char tag[] = "BEACON-SCANNER";
 
-extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
-extern const uint8_t ca_end[] asm("_binary_CA_crt_end");
-extern const uint8_t certificate_start[] asm("_binary_esp32_crt_start");
-extern const uint8_t certificate_end[] asm("_binary_esp32_crt_end");
-extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
-extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 
 class Main
 {
@@ -69,50 +62,12 @@ private:
     ESP_LOGI(tag, "-> System event %d", event.event_id);
   }
 
-  void on_socket_io()
-  {
-    try
-      {
-        ESP_LOGI(tag, "on_socket_io");
-
-        try
-          {
-            unsigned char buf[200];
-            size_t bytes_read = 0;
-            sock.read(buf, sizeof(buf), bytes_read);
-            ESP_LOGI(tag, "on_socket_io: read %d", bytes_read);
-
-            if (bytes_read == 0)
-              {
-                sock.close();
-              }
-          }
-        catch(std::exception &e)
-          {
-            ESP_LOGI(tag, "on_socket_io: exception");
-          }
-      }
-    catch(...)
-      {
-        ESP_LOGI(tag, "on_socket_io: exception");
-        sock.close();
-      }
-  }
 
   void on_wifi_connected(bool connected)
   {
     if (connected)
       {
         ESP_LOGI(tag, "-> Wifi connected");
-        try
-          {
-            sock.io_callback().set(os::Slot<void()>(loop, std::bind(&Main::on_socket_io, this)));
-            sock.connect(MQTT_HOST, 8883);
-          }
-        catch(std::exception &e)
-          {
-            ESP_LOGE(tag, "Socket connect exception: %s", e.what());
-          }
       }
     else
       {
@@ -173,15 +128,6 @@ private:
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 #endif
 
-    try
-      {
-        sock.set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
-        sock.set_ca_certificate(reinterpret_cast<const char *>(ca_start));
-      }
-    catch(std::exception &e)
-      {
-        ESP_LOGE(tag, "Socket exception: %s", e.what());
-      }
     heap_caps_print_heap_info(0);
     loop->run();
   }
@@ -195,7 +141,6 @@ private:
 #ifdef CONFIG_AWS_IOT_SDK
   os::Mqtt mqtt;
 #endif
-  os::TLSStream sock;
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };

@@ -45,6 +45,8 @@ namespace
         return "name resolution failed";
       case os::NetworkErrc::InvalidAddress:
         return "invalid address";
+      case os::NetworkErrc::TLSProtocolError:
+        return "TLS protocol error";
       case os::NetworkErrc::ConnectionRefused:
         return "connection refused";
       case os::NetworkErrc::ConnectionClosed:
