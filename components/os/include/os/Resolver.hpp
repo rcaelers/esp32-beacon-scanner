@@ -18,33 +18,57 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef OS_ERRORS_HPP
-#define OS_ERRORS_HPP
+#ifndef OS_RESOLVER_HPP
+#define OS_RESOLVER_HPP
 
+#include <string>
 #include <system_error>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <netdb.h>
+
+#undef bind
+
+#include "os/Task.hpp"
+#include "os/Queue.hpp"
+#include "os/Slot.hpp"
 
 namespace os
 {
-  enum class NetworkErrc
+  class Resolver
+  {
+  public:
+    using resolved_slot_type = os::Slot<void (std::error_code ec, struct addrinfo *addr_list)>;
+
+    static Resolver &instance();
+    void resolve_async(std::string host, std::string port, resolved_slot_type slot);
+
+  private:
+    Resolver();
+    ~Resolver() = default;
+
+    void resolve_task();
+
+  private:
+    struct ResolveJob
     {
-      // no 0
-      Timeout = 1,
-      InternalError,
-      NameResolutionFailed,
-      InvalidAddress,
-      ConnectionRefused,
-      ConnectionClosed,
-      ReadError,
-      WriteError,
+    public:
+      ResolveJob(std::string host, std::string port, resolved_slot_type slot)
+        : host(std::move(host)),
+          port(std::move(port)),
+          slot(std::move(slot))
+      {
+      }
+      std::string host;
+      std::string port;
+      resolved_slot_type slot;
     };
 
-  std::error_code make_error_code(NetworkErrc);
+    os::Queue<ResolveJob> queue;
+    os::Task task;
+  };
 }
 
-namespace std
-{
-  template <>
-  struct is_error_code_enum<os::NetworkErrc> : true_type {};
-}
-
-#endif // OS_ERRORS_HPP
+#endif // OS_RESOLVER_HPP

@@ -41,6 +41,8 @@ namespace
         return "network timeout";
       case os::NetworkErrc::InternalError:
         return "internal error";
+      case os::NetworkErrc::NameResolutionFailed:
+        return "name resolution failed";
       case os::NetworkErrc::InvalidAddress:
         return "invalid address";
       case os::NetworkErrc::ConnectionRefused:
