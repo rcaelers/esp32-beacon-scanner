@@ -142,7 +142,7 @@ private:
     mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 #endif
 
-    heap_caps_print_heap_info(0);
+    heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
     loop->run();
   }
 
