@@ -62,12 +62,24 @@ private:
     ESP_LOGI(tag, "-> System event %d", event.event_id);
   }
 
+  void on_wifi_timeout()
+  {
+    ESP_LOGI(tag, "-> Wifi timer");
+    wifi_timer = 0;
+    if (!wifi.connected().get())
+      {
+        ESP_LOGI(tag, "-> Wifi failed to connect in time. Reset");
+        wifi.reconnect();
+        wifi_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
+      }
+  }
 
   void on_wifi_connected(bool connected)
   {
     if (connected)
       {
         ESP_LOGI(tag, "-> Wifi connected");
+        loop->cancel_timer(wifi_timer);
       }
     else
       {
@@ -121,6 +133,8 @@ private:
     beacon_scanner.scan_result_signal().connect(loop, std::bind(&Main::on_beacon_scanner_scan_result, this, std::placeholders::_1));
 #endif
 
+    wifi_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
+
     wifi.connect();
 
 #ifdef CONFIG_AWS_IOT_SDK
@@ -138,6 +152,7 @@ private:
   os::Wifi &wifi;
   std::shared_ptr<os::MainLoop> loop;
   os::Task task;
+  os::MainLoop::timer_id wifi_timer = 0;
 #ifdef CONFIG_AWS_IOT_SDK
   os::Mqtt mqtt;
 #endif

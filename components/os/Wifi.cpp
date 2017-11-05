@@ -87,6 +87,14 @@ Wifi::connect()
   esp_wifi_start();
 }
 
+void
+Wifi::reconnect()
+{
+  esp_wifi_disconnect();
+  esp_wifi_stop();
+  esp_wifi_start();
+}
+
 esp_err_t
 Wifi::on_sysem_event(void *ctx, system_event_t *event)
 {

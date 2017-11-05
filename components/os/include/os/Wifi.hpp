@@ -49,6 +49,7 @@ namespace os
     void set_auto_connect(bool auto_connect);
 
     void connect();
+    void reconnect();
 
     os::Signal<void(system_event_t)> &system_event_signal();
     os::Property<bool> &connected();
