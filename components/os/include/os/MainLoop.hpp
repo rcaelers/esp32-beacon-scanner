@@ -48,6 +48,8 @@ namespace os
   {
   public:
     using io_callback = std::function<void(std::error_code ec)>;
+    using timer_callback = std::function<void()>;
+    using timer_id = int;
 
     MainLoop() = default;
     ~MainLoop();
@@ -67,9 +69,13 @@ namespace os
     void unnotify_read(int fd);
     void unnotify_write(int fd);
     void unnotify(int fd);
+
     void run();
     void terminate();
 
+    timer_id add_timer(std::chrono::milliseconds duration, timer_callback callback);
+    timer_id add_periodic_timer(std::chrono::milliseconds period, timer_callback callback);
+    void cancel_timer(timer_id id);
 
   private:
     enum class IoType { Read, Write };
@@ -83,24 +89,40 @@ namespace os
     };
     using poll_list_type = std::list<PollData>;
 
-    poll_list_type::iterator find(int fd, IoType type);
+    struct TimerData
+    {
+      timer_id id;
+      std::chrono::milliseconds period;
+      std::chrono::system_clock::time_point expire_time;
+      timer_callback callback;
+    };
+    using timer_list_type = std::list<TimerData>;
 
+    poll_list_type::iterator find(int fd, IoType type);
     void notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds timeout_duration);
     void unnotify(int fd, IoType type);
-
-    int do_select(poll_list_type &pollfds_copy, fd_set &read_set, fd_set &write_set);
-    poll_list_type copy_poll_list() const;
-
-    void process_queue();
+    std::chrono::milliseconds get_first_expiring_timer_duration();
+    timer_list_type::iterator get_first_expiring_timer();
+    int do_select(poll_list_type &poll_list_copy);
+    poll_list_type get_poll_list() const;
+    void handle_timeout(poll_list_type &poll_list_copy);
+    void handle_io(poll_list_type &poll_list_copy);
+    void handle_queue();
+    void handle_timers();
 
     static ThreadLocal<std::shared_ptr<MainLoop>> &get_thread_local();
 
   private:
+    fd_set read_set;
+    fd_set write_set;
     mutable os::Mutex poll_list_mutex;
     poll_list_type poll_list;
     os::Queue<std::shared_ptr<os::ClosureBase>> queue;
     os::Trigger trigger;
     bool terminate_loop = false;
+    timer_id next_timer_id = 1;
+    mutable os::Mutex timer_list_mutex;
+    timer_list_type timers;
   };
 }
 

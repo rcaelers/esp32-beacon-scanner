@@ -33,6 +33,8 @@
 
 #include "os/NetworkErrors.hpp"
 
+#include "os/hexdump.hpp"
+
 #undef bind
 
 static const char tag[] = "MAINLOOP";
@@ -156,8 +158,80 @@ MainLoop::unnotify(int fd, IoType type)
   trigger.signal();
 }
 
+
+MainLoop::timer_id
+MainLoop::add_timer(std::chrono::milliseconds duration, timer_callback callback)
+{
+  ScopedLock l(timer_list_mutex);
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+  TimerData data;
+  data.id = next_timer_id++;
+  data.expire_time = now + duration;
+  data.period = std::chrono::milliseconds::max();
+  data.callback = callback;
+
+  timers.push_back(data);
+  trigger.signal();
+
+  return data.id;
+}
+
+MainLoop::timer_id
+MainLoop::add_periodic_timer(std::chrono::milliseconds period, timer_callback callback)
+{
+  ScopedLock l(timer_list_mutex);
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+  TimerData data;
+  data.id = next_timer_id++;
+  data.expire_time = now + period;
+  data.period = period;
+  data.callback = callback;
+
+  timers.push_back(data);
+  trigger.signal();
+
+  return data.id;
+}
+
+void
+MainLoop::cancel_timer(timer_id id)
+{
+  ScopedLock l(timer_list_mutex);
+  auto iter =  std::find_if(timers.begin(), timers.end(),
+                            [id](TimerData t)
+                            {
+                              return t.id = id;
+                            });
+  if (iter != timers.end())
+    {
+      timers.erase(iter);
+    }
+  trigger.signal();
+}
+
+MainLoop::timer_list_type::iterator
+MainLoop::get_first_expiring_timer()
+{
+  auto iter = std::min_element(timers.begin(), timers.end(), [](TimerData &a, TimerData &b) {
+      return a.expire_time < b.expire_time;
+    });
+
+  return iter;
+}
+
+std::chrono::milliseconds
+MainLoop::get_first_expiring_timer_duration()
+{
+  ScopedLock l(timer_list_mutex);
+
+  auto iter = get_first_expiring_timer();
+  return std::chrono::duration_cast<std::chrono::milliseconds>(iter->expire_time - std::chrono::system_clock::now());
+}
+
 int
-MainLoop::do_select(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &write_set)
+MainLoop::do_select(poll_list_type &poll_list_copy)
 {
   FD_ZERO(&read_set);
   FD_ZERO(&write_set);
@@ -167,9 +241,8 @@ MainLoop::do_select(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &wr
   FD_SET(trigger_fd, &read_set);
 
   std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-  std::chrono::milliseconds timeout = std::chrono::milliseconds::max();
+  std::chrono::milliseconds timeout = get_first_expiring_timer_duration();
 
-  ScopedLock l(poll_list_mutex);
   for (auto &pd : poll_list_copy)
     {
       max_fd = std::max(max_fd, pd.fd);
@@ -193,6 +266,13 @@ MainLoop::do_select(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &wr
 
   int r = 0;
 
+#if DEBUG_SELECT
+  ESP_LOGD(tag, "IN Read set:");
+  hexdump(tag, reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
+  ESP_LOGD(tag, "IN Write set:");
+  hexdump(tag, reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
+#endif
+
   if (timeout != std::chrono::milliseconds::max())
     {
       timeval tv;
@@ -209,7 +289,7 @@ MainLoop::do_select(poll_list_type &poll_list_copy, fd_set &read_set, fd_set &wr
 }
 
 MainLoop::poll_list_type
-MainLoop::copy_poll_list() const
+MainLoop::get_poll_list() const
 {
   ScopedLock l(poll_list_mutex);
   return poll_list;
@@ -222,12 +302,17 @@ MainLoop::run()
 
   while (true)
     {
-      poll_list_type poll_list_copy = copy_poll_list();
-      fd_set read_set;
-      fd_set write_set;
+      poll_list_type poll_list_copy = get_poll_list();
 
-      int r = do_select(poll_list_copy, read_set, write_set);
+      int r = do_select(poll_list_copy);
 
+#if DEBUG_SELECT
+      ESP_LOGD(tag, "Select: %d:", r);
+      ESP_LOGD(tag, "Read set:");
+      hexdump(tag, reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
+      ESP_LOGD(tag, "Write set:");
+      hexdump(tag, reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
+#endif
       if (r == -1)
         {
           const char* error = strerror(errno);
@@ -235,51 +320,17 @@ MainLoop::run()
         }
       else if (r == 0)
         {
-          std::error_code ec;
-          std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-
-          for (auto &pd : poll_list_copy)
-            {
-              unnotify(pd.fd, pd.type);
-
-              if (pd.timeout_duration != std::chrono::milliseconds::max() &&
-                  pd.start_time + pd.timeout_duration >= now)
-                {
-                  ESP_LOGE(tag, "Timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
-                  try
-                    {
-                      pd.callback(os::NetworkErrc::Timeout);
-                    }
-                  catch(...)
-                    {
-                      ESP_LOGE(tag, "Exception while handling timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
-                    }
-                }
-            }
+          handle_timeout(poll_list_copy);
+          handle_timers();
         }
       else if (r > 0)
         {
-          std::error_code ec;
-          for (auto &pd : poll_list_copy)
-            {
-              if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
-                   (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)))
-                {
-                  unnotify(pd.fd, pd.type);
-                  ESP_LOGD(tag, "Select for %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
-                  try
-                    {
-                      pd.callback(ec);
-                    }
-                  catch(...)
-                    {
-                      ESP_LOGE(tag, "Exception while handling %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
-                    }
-                }
-            }
+          handle_io(poll_list_copy);
+          handle_timers();
+
           if (FD_ISSET(trigger.get_poll_fd(), &read_set))
             {
-              process_queue();
+              handle_queue();
               trigger.confirm();
             }
         }
@@ -287,7 +338,85 @@ MainLoop::run()
 }
 
 void
-MainLoop::process_queue()
+MainLoop::handle_timeout(poll_list_type &poll_list_copy)
+{
+  std::error_code ec;
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+  for (auto &pd : poll_list_copy)
+    {
+      if (pd.timeout_duration != std::chrono::milliseconds::max() &&
+          now > pd.start_time + pd.timeout_duration)
+        {
+          unnotify(pd.fd, pd.type);
+          ESP_LOGE(tag, "Timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+          try
+            {
+              pd.callback(os::NetworkErrc::Timeout);
+            }
+          catch(...)
+            {
+              ESP_LOGE(tag, "Exception while handling timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+            }
+        }
+    }
+}
+
+void
+MainLoop::handle_io(poll_list_type &poll_list_copy)
+{
+  std::error_code ec;
+  for (auto &pd : poll_list_copy)
+    {
+      if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
+           (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)))
+        {
+          ESP_LOGD(tag, "Select for %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+          unnotify(pd.fd, pd.type);
+          try
+            {
+              pd.callback(ec);
+            }
+          catch(...)
+            {
+              ESP_LOGE(tag, "Exception while handling %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
+            }
+        }
+    }
+
+}
+
+void
+MainLoop::handle_timers()
+{
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  timer_list_type notify_list;
+
+  timer_list_mutex.lock();
+  auto first = get_first_expiring_timer();
+  while (first != timers.end() && now >= first->expire_time)
+    {
+      notify_list.push_back(*first);
+      if (first->period != std::chrono::milliseconds::max())
+        {
+          first->expire_time += first->period;
+        }
+      else
+        {
+          timers.erase(first);
+        }
+      first = get_first_expiring_timer();
+    }
+  timer_list_mutex.unlock();
+
+  for (auto t : notify_list)
+    {
+      t.callback();
+    }
+}
+
+void
+MainLoop::handle_queue()
 {
   while (true)
     {
