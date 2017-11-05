@@ -32,7 +32,7 @@
 #include <netdb.h>
 
 #include "os/Resolver.hpp"
-#include "os/Errors.hpp"
+#include "os/NetworkErrors.hpp"
 
 #include "lwip/sockets.h"
 #include "lwip/sys.h"

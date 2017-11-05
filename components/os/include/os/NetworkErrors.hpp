@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef OS_ERRORS_HPP
-#define OS_ERRORS_HPP
+#ifndef OS_NETWORKERRORS_HPP
+#define OS_NETWORKERRORS_HPP
 
 #include <system_error>
 
@@ -48,4 +48,4 @@ namespace std
   struct is_error_code_enum<os::NetworkErrc> : true_type {};
 }
 
-#endif // OS_ERRORS_HPP
+#endif // OS_NETWORKERRORS_HPP

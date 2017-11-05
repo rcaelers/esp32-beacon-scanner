@@ -26,7 +26,7 @@
 #include "esp_log.h"
 
 #include "os/Resolver.hpp"
-#include "os/Errors.hpp"
+#include "os/NetworkErrors.hpp"
 
 static const char tag[] = "NET";
 

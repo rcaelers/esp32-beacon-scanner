@@ -31,7 +31,7 @@
 
 #include "esp_log.h"
 
-#include "os/Errors.hpp"
+#include "os/NetworkErrors.hpp"
 
 #undef bind
 
