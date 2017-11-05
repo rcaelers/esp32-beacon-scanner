@@ -40,7 +40,7 @@ Resolver::instance()
 }
 
 Resolver::Resolver()
-  : task("resolve_task", std::bind(&Resolver::resolve_task, this))
+  : task("resolve_task", std::bind(&Resolver::resolve_task, this), Task::CoreId::NoAffinity, 2048)
 {
 }
 
