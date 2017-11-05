@@ -24,51 +24,54 @@
 #include <iomanip>
 #include <algorithm>
 
+#include "esp_log.h"
+
 namespace os
 {
   void
-  hexdump(const uint8_t *data, std::size_t size)
+  hexdump(const char *tag, const uint8_t *data, std::size_t size)
   {
-    std::cout << std::hex << std::setfill('0');
 
     int num_lines = (size + 15) / 16;
     int index = 0;
 
     for (int line = 0; line < num_lines; line++)
       {
-        std::cout << std::setw(8) << index;
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0');
+        ss << std::setw(8) << index;
 
         for (int column = 0; column < 16; column++)
           {
             if (column % 8 == 0)
               {
-                std::cout << ' ';
+                ss << ' ';
               }
 
             if (index + column < size)
               {
-                std::cout << ' ' << std::setw(2) << (unsigned)data[index + column];
+                ss << ' ' << std::setw(2) << (unsigned)data[index + column];
               }
             else
               {
-                std::cout << "   ";
+                ss << "   ";
               }
           }
 
-        std::cout << "  ";
+        ss << "  ";
         for (int column = 0; column < std::min(std::size_t(16), size - index); column++)
           {
             if (data[index + column] < 32)
               {
-                std::cout << '.';
+                ss << '.';
               }
             else
               {
-                std::cout << data[index + column];
+                ss << data[index + column];
               }
           }
 
-        std::cout << "\n";
+        ESP_LOGD(tag, "%s",  ss.str().c_str());
         index += 16;
       }
   }
