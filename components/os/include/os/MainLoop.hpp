@@ -59,6 +59,7 @@ namespace os
 
     static std::shared_ptr<MainLoop> current();
 
+    void post(std::function<void()> func);
     void post(std::shared_ptr<ClosureBase> closure);
 
     void notify_read(int fd, io_callback read_cb, std::chrono::milliseconds timeout_duration = std::chrono::milliseconds::max());
@@ -69,10 +70,6 @@ namespace os
     void run();
     void terminate();
 
-    void post(std::function<void()> func)
-    {
-      post(std::make_shared<os::FunctionClosure<void ()>>(func));
-    }
 
   private:
     enum class IoType { Read, Write };

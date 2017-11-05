@@ -45,6 +45,12 @@ MainLoop::~MainLoop()
 }
 
 void
+MainLoop::post(std::function<void()> func)
+{
+  post(std::make_shared<os::FunctionClosure<void ()>>(func));
+}
+
+void
 MainLoop::post(std::shared_ptr<ClosureBase> closure)
 {
   queue.push(closure);
