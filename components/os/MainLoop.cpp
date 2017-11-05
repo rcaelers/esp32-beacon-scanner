@@ -354,6 +354,14 @@ MainLoop::handle_timeout(poll_list_type &poll_list_copy)
             {
               pd.callback(os::NetworkErrc::Timeout);
             }
+          catch (const std::system_error &ex)
+            {
+              ESP_LOGE(tag, "System error while handling timeout %d/%d %d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.code().value(), ex.what());
+            }
+          catch (const std::exception &ex)
+            {
+              ESP_LOGE(tag, "Exception while handling timeout %d/%d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.what());
+            }
           catch(...)
             {
               ESP_LOGE(tag, "Exception while handling timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
@@ -376,6 +384,14 @@ MainLoop::handle_io(poll_list_type &poll_list_copy)
           try
             {
               pd.callback(ec);
+            }
+          catch (const std::system_error &ex)
+            {
+              ESP_LOGE(tag, "System error while handling %d/%d %d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.code().value(), ex.what());
+            }
+          catch (const std::exception &ex)
+            {
+              ESP_LOGE(tag, "Exception while handling %d/%d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.what());
             }
           catch(...)
             {
@@ -429,6 +445,14 @@ MainLoop::handle_queue()
       try
         {
           closure->operator()();
+        }
+      catch (const std::system_error &ex)
+        {
+          ESP_LOGE(tag, "System error while handling invoked function%d %s", ex.code().value(), ex.what());
+        }
+      catch (const std::exception &ex)
+        {
+          ESP_LOGE(tag, "Exception while handling invoked function: %s", ex.what());
         }
       catch(...)
         {
