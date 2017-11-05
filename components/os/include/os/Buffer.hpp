@@ -28,7 +28,7 @@ namespace os
   class Buffer
   {
   public:
-    Buffer(std::string s) noexcept
+    Buffer(std::string &s) noexcept
       : data_(s.size() ? reinterpret_cast<uint8_t *>(&s[0]) : nullptr), size_(s.size())
     {
     }
