@@ -52,7 +52,7 @@ namespace
       case os::NetworkErrc::ConnectionClosed:
         return "connection closed";
       case os::NetworkErrc::ReadError:
-        return "read errors";
+        return "read error";
       case os::NetworkErrc::WriteError:
         return "write error";
       default:
