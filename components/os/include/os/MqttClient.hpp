@@ -118,8 +118,10 @@ namespace os
     int packet_id = 0;
     subscribe_slot_t subscribe_slot;
     os::Property<bool> connected_property { false };
+    int pending_ping_count = 0;
 
     static constexpr int keep_alive_sec = 10;
+    static constexpr int pending_ping_count_limit = 5;
   };
 }
 

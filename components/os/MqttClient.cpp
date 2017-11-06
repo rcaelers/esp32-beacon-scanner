@@ -251,7 +251,11 @@ MqttClient::send_ping()
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send ping", bytes_transferred, pkt->size(), ec);
-          // TODO: reconnect after x unacked pings
+          pending_ping_count++;
+          if (pending_ping_count > pending_ping_count_limit)
+            {
+              handle_error("ping response timeout ", MqttErrc::Timeout);
+            }
         });
     }
   catch (std::system_error &e)
@@ -656,7 +660,7 @@ MqttClient::handle_ping_response()
   std::error_code ec;
 
   ESP_LOGD(tag, "Ping respose.");
-
+  pending_ping_count--;
   return ec;
 }
 
