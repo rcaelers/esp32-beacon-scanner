@@ -38,6 +38,8 @@ namespace os
     using closure_type = os::Closure<callback_type, Args...>;
 
   public:
+    Slot() = default;
+
     Slot(std::shared_ptr<os::MainLoop> loop, callback_type callback)
       : loop(loop), callback(callback)
     {
@@ -64,13 +66,16 @@ namespace os
 
     void call(Args... args) const
     {
-      if (loop)
+      if (callback)
         {
-          loop->post(std::make_shared<closure_type>(callback, std::move(args)...));
-        }
-      else
-        {
-          callback(std::move(args)...);
+          if (loop)
+            {
+              loop->post(std::make_shared<closure_type>(callback, std::move(args)...));
+            }
+          else
+            {
+              callback(std::move(args)...);
+            }
         }
     }
 
