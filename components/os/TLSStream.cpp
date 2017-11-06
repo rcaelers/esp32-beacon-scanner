@@ -40,6 +40,7 @@
 extern "C"
 {
 #include "mbedtls/esp_debug.h"
+#include "esp_heap_caps.h"
 }
 
 #include "esp_log.h"
@@ -48,8 +49,9 @@ static const char tag[] = "NET";
 
 using namespace os;
 
-TLSStream::TLSStream()
-  : resolver(Resolver::instance())
+TLSStream::TLSStream(std::shared_ptr<os::MainLoop> loop) :
+  loop(loop),
+  resolver(Resolver::instance())
 {
   mbedtls_net_init(&server_fd);
   mbedtls_ssl_init(&ssl);
@@ -120,9 +122,6 @@ TLSStream::parse_key(mbedtls_pk_context *key, const char *key_str)
 void
 TLSStream::connect(std::string host, int port, connect_callback_t callback)
 {
-  loop = MainLoop::current();
-  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
-
   connect(std::move(host), port, os::make_slot(loop, callback));
 }
 
@@ -130,9 +129,6 @@ void
 TLSStream::connect(std::string host, int port, connect_slot_t slot)
 {
   ESP_LOGI(tag, "Connecting to %s:%s", host.c_str(), std::to_string(port).c_str());
-
-  loop = MainLoop::current();
-  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
 
   auto self = shared_from_this();
   resolver.resolve_async(host, std::to_string(port), os::make_slot(loop, [this, self, host, slot] (std::error_code ec, struct addrinfo *addr_list) {
@@ -326,18 +322,12 @@ TLSStream::on_handshake(connect_slot_t slot)
 void
 TLSStream::write_async(Buffer buf, io_callback_t callback)
 {
-  loop = MainLoop::current();
-  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
-
   write_async(std::move(buf), os::make_slot(loop, callback));
 }
 
 void
 TLSStream::read_async(Buffer buf, std::size_t count, io_callback_t callback)
 {
-  loop = MainLoop::current();
-  assert(loop != nullptr && "TLSStream can only be used in MainLoop thread");
-
   read_async(std::move(buf), count, os::make_slot(loop, callback));
 }
 
@@ -470,7 +460,6 @@ TLSStream::do_read_async(Buffer buf, std::size_t count, std::size_t bytes_transf
   slot.call(ec, bytes_transferred);
 }
 
-// TODO: make async
 void
 TLSStream::close()
 {
@@ -478,6 +467,7 @@ TLSStream::close()
   connected_property.set(false);
 
   int ret = 0;
+  // TODO: make async
   do
     {
       ret = mbedtls_ssl_close_notify(&ssl);
@@ -537,5 +527,4 @@ os::Property<bool> &
 TLSStream::connected()
 {
   return connected_property;
-
 }

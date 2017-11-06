@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#define _GLIBCXX_USE_C99
+
 #include <iostream>
 #include <string>
 
@@ -26,12 +28,13 @@
 #include "os/Slot.hpp"
 #include "os/Task.hpp"
 #include "os/MainLoop.hpp"
-#include "os/Mqtt.hpp"
+#include "os/MqttClient.hpp"
 
 extern "C"
 {
-#include "esp_heap_caps.h"
+#include "esp_heap_trace.h"
 }
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "nvs_flash.h"
@@ -40,6 +43,15 @@ extern "C"
 
 static const char tag[] = "BEACON-SCANNER";
 
+extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
+extern const uint8_t ca_end[] asm("_binary_CA_crt_end");
+extern const uint8_t certificate_start[] asm("_binary_esp32_crt_start");
+extern const uint8_t certificate_end[] asm("_binary_esp32_crt_end");
+extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
+extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
+
+// #define NUM_RECORDS 100
+// static heap_trace_record_t trace_record[NUM_RECORDS]; // This buffer must be in internal RAM
 
 class Main
 {
@@ -50,6 +62,7 @@ public:
 #endif
     wifi(os::Wifi::instance()),
     loop(std::make_shared<os::MainLoop>()),
+    mqtt(std::make_shared<os::MqttClient>(loop, "BeaconScanner", MQTT_HOST, 8883)),
     task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
@@ -80,6 +93,11 @@ private:
       {
         ESP_LOGI(tag, "-> Wifi connected");
         loop->cancel_timer(wifi_timer);
+        mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+        mqtt->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+        mqtt->set_callback(os::make_slot(loop, [this] (std::string topic, std::string payload) { on_mqtt_data(topic, payload);} ));
+        mqtt->connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
+        mqtt->connect();
       }
     else
       {
@@ -95,6 +113,7 @@ private:
 #ifdef  CONFIG_BT_ENABLED
         beacon_scanner.start();
 #endif
+        mqtt->subscribe("test/test");
       }
     else
       {
@@ -103,6 +122,11 @@ private:
         beacon_scanner.stop();
 #endif
       }
+  }
+
+  void on_mqtt_data(std::string topic, std::string payload)
+  {
+    ESP_LOGI(tag, "-> MQTT %s -> %s", topic.c_str(), payload.c_str());
   }
 
 #ifdef  CONFIG_BT_ENABLED
@@ -114,9 +138,7 @@ private:
     led_state ^= 1;
     gpio_set_level(LED_GPIO, led_state);
 
-#ifdef CONFIG_AWS_IOT_SDK
-    mqtt.publish("beacon", result.mac);
-#endif
+    mqtt->publish("test/beacon", result.mac + ":" + std::to_string(result.rssi));
   }
 #endif
 
@@ -137,12 +159,9 @@ private:
 
     wifi.connect();
 
-#ifdef CONFIG_AWS_IOT_SDK
-    mqtt.connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
-    mqtt.init(MQTT_HOST, reinterpret_cast<const char *>(ca_start), reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
-#endif
-
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
+    // heap_trace_init_standalone(trace_record, NUM_RECORDS);
+    // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_ALL) );
     loop->run();
   }
 
@@ -151,14 +170,13 @@ private:
 #endif
   os::Wifi &wifi;
   std::shared_ptr<os::MainLoop> loop;
+  std::shared_ptr<os::MqttClient> mqtt;
   os::Task task;
   os::MainLoop::timer_id wifi_timer = 0;
-#ifdef CONFIG_AWS_IOT_SDK
-  os::Mqtt mqtt;
-#endif
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };
+
 
 
 extern "C" void
@@ -170,9 +188,11 @@ app_main()
       ESP_ERROR_CHECK(nvs_flash_erase());
       ret = nvs_flash_init();
     }
-  ESP_ERROR_CHECK (ret);
+  ESP_ERROR_CHECK(ret);
 
-  heap_caps_print_heap_info(0);
+  ESP_LOGI(tag, "HEAP: startup");
+  heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
+
   new Main();
 
   while(1)

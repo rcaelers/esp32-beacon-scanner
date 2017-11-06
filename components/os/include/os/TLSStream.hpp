@@ -60,7 +60,7 @@ namespace os
     using connect_slot_t = os::Slot<connect_function_t>;
     using io_slot_t = os::Slot<io_function_t>;
 
-    TLSStream();
+    TLSStream(std::shared_ptr<os::MainLoop> loop);
     ~TLSStream();
 
     void set_client_certificate(const char *cert, const char *key);
@@ -103,8 +103,8 @@ namespace os
     mbedtls_x509_crt client_crt;
     mbedtls_pk_context client_key;
 
-    os::Resolver &resolver;
     std::shared_ptr<os::MainLoop> loop;
+    os::Resolver &resolver;
     os::Property<bool> connected_property { false };
 
     class WriteOperation
