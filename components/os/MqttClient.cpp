@@ -27,7 +27,6 @@
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 
-#include "os/hexdump.hpp"
 #include "os/MqttPacket.hpp"
 #include "os/MqttErrors.hpp"
 
@@ -219,8 +218,6 @@ MqttClient::send_connect()
           pkt->add(password);
         }
 
-      hexdump(tag, pkt->data(), pkt->size());
-
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           ec = verify("send connect", bytes_transferred, pkt->size(), ec);
@@ -245,9 +242,6 @@ MqttClient::send_ping()
 
       pkt->add_fixed_header(os::PacketType::PingReq, 0);
       pkt->add(0);
-
-      hexdump(tag, pkt->data(), pkt->size());
-
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send ping", bytes_transferred, pkt->size(), ec);
@@ -287,8 +281,6 @@ MqttClient::send_publish(std::string topic, std::string payload, PublishOptions 
       pkt->add(topic);
       pkt->append(payload);
 
-      hexdump(tag, pkt->data(), pkt->size());
-
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send publish", bytes_transferred, pkt->size(), ec);
@@ -322,8 +314,6 @@ MqttClient::send_subscribe(std::list<std::string> topics)
           pkt->add(0);
         }
 
-      hexdump(tag, pkt->data(), pkt->size());
-
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send subscribe", bytes_transferred, pkt->size(), ec);
@@ -356,8 +346,6 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
           pkt->add(topic);
         }
 
-      hexdump(tag, pkt->data(), pkt->size());
-
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send unsubscribe", bytes_transferred, pkt->size(), ec);
@@ -376,9 +364,6 @@ MqttClient::async_read_control_packet()
 
   auto self = shared_from_this();
   sock->read_async(buf, 1, [this, self, buf] (std::error_code ec, std::size_t bytes_transferred) {
-      ESP_LOGD(tag, "Fixed header %s %d:", ec.message().c_str(), bytes_transferred);
-      hexdump(tag, buf.data(), buf.size());
-
       ec = verify("fixed header", bytes_transferred, 1, ec);
       if (!ec)
         {
@@ -403,9 +388,6 @@ MqttClient::async_read_remaining_length()
   Buffer buf(&header_buffer, 1);
   auto self = shared_from_this();
   sock->read_async(buf, 1, [this, self, buf] (std::error_code ec, std::size_t bytes_transferred) {
-      ESP_LOGD(tag, "Length %s %d", ec.message().c_str(), bytes_transferred);
-      hexdump(tag, buf.data(), buf.size());
-
       ec = verify("remaining length", bytes_transferred, 1, ec);
       if (!ec)
         {
@@ -444,9 +426,6 @@ MqttClient::async_read_payload()
   Buffer buf(payload_buffer);
   auto self = shared_from_this();
   sock->read_async(buf, remaining_length, [this, self, buf] (std::error_code ec, std::size_t bytes_transferred) {
-      ESP_LOGI(tag, "Payload %s %d:", ec.message().c_str(), bytes_transferred);
-      hexdump(tag, buf.data(), buf.size());
-
       ec = verify("payload", bytes_transferred, remaining_length, ec);
       if (!ec)
         {
@@ -658,8 +637,6 @@ std::error_code
 MqttClient::handle_ping_response()
 {
   std::error_code ec;
-
-  ESP_LOGD(tag, "Ping respose.");
   pending_ping_count--;
   return ec;
 }
