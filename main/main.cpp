@@ -115,16 +115,12 @@ private:
         ESP_LOGI(tag, "-> MQTT connected");
         ESP_LOGI(tag, "-> Requesting configuration at %s", topic_config.c_str());
         mqtt->subscribe(topic_config);
-#ifdef  CONFIG_BT_ENABLED
-        beacon_scanner.start();
-#endif
+        start_beacon_scan();
       }
     else
       {
         ESP_LOGI(tag, "-> MQTT disconnected");
-#ifdef  CONFIG_BT_ENABLED
-        beacon_scanner.stop();
-#endif
+        stop_beacon_scan();
       }
   }
 
@@ -145,13 +141,49 @@ private:
   {
     static int led_state = 0;
 
-    ESP_LOGI(tag, "-> BT result %s %d", result.mac.c_str(), result.rssi);
+    ESP_LOGI(tag, "-> BT result %s %d (free %d)", result.mac.c_str(), result.rssi, heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
     led_state ^= 1;
     gpio_set_level(LED_GPIO, led_state);
-
-    mqtt->publish("test/beacon", result.mac + ":" + std::to_string(result.rssi));
+    scan_results[result.mac] = result.rssi;
   }
+
 #endif
+
+  void on_scan_timer()
+  {
+    ESP_LOGI(tag, "-> Scan timer");
+    std::string payload;
+
+    for (auto kv : scan_results)
+      {
+        payload += kv.first + ":" + std::to_string(kv.second) + "\n";
+      }
+
+    if (mqtt->connected().get())
+      {
+        ESP_LOGI(tag, "-> Scan: %s", payload.c_str());
+        mqtt->publish("test/beacon", payload);
+      }
+    scan_results.clear();
+  }
+
+  void start_beacon_scan()
+  {
+    scan_timer = loop->add_periodic_timer(std::chrono::milliseconds(1000), std::bind(&Main::on_scan_timer, this));
+#ifdef  CONFIG_BT_ENABLED
+    beacon_scanner.start();
+#endif
+  }
+
+  void stop_beacon_scan()
+  {
+    loop->cancel_timer(scan_timer);
+    scan_timer = 0;
+
+#ifdef  CONFIG_BT_ENABLED
+    beacon_scanner.stop();
+#endif
+  }
 
   void main_task()
   {
@@ -183,6 +215,8 @@ private:
   std::shared_ptr<os::MqttClient> mqtt;
   os::Task task;
   os::MainLoop::timer_id wifi_timer = 0;
+  os::MainLoop::timer_id scan_timer = 0;
+  std::map<std::string, int> scan_results;
   std::string topic_config;
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
