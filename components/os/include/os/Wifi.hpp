@@ -54,6 +54,8 @@ namespace os
     os::Signal<void(system_event_t)> &system_event_signal();
     os::Property<bool> &connected();
 
+    std::string get_mac() const;
+    
   private:
     Wifi();
     ~Wifi();
