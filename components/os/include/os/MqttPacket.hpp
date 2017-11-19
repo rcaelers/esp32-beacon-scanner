@@ -77,6 +77,7 @@ namespace os
     void add(uint8_t value);
     void append(std::string s);
     void add(std::string str);
+    void add_length(std::size_t size);
     void add_fixed_header(os::PacketType type, std::uint8_t flags);
     Buffer to_buffer();
     uint8_t *data() noexcept;

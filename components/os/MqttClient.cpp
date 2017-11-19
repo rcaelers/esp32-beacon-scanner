@@ -195,7 +195,7 @@ MqttClient::send_connect()
       flags |= ConnectFlags::CleanSession;
 
       pkt->add_fixed_header(os::PacketType::Connect, 0);
-      pkt->add(len);
+      pkt->add_length(len);
       pkt->add("MQTT");
       pkt->add(0x04);
       pkt->add(static_cast<uint8_t>(flags.value()));
@@ -283,7 +283,7 @@ MqttClient::send_publish(std::string topic, std::string payload, PublishOptions 
       len += payload.size() + 2;
 
       pkt->add_fixed_header(os::PacketType::Publish, static_cast<uint8_t>(flags.value()));
-      pkt->add(len);
+      pkt->add_length(len);
       pkt->add(topic);
       pkt->add(payload);
 
@@ -313,7 +313,7 @@ MqttClient::send_subscribe(std::list<std::string> topics)
         });
 
       pkt->add_fixed_header(os::PacketType::Subscribe, 0b0010u);
-      pkt->add(len);
+      pkt->add_length(len);
       pkt->add(static_cast<std::uint8_t>(packet_id >> 8));
       pkt->add(static_cast<std::uint8_t>(packet_id & 0xff));
       for (auto topic : topics)
@@ -348,7 +348,7 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
         });
 
       pkt->add_fixed_header(os::PacketType::Unsubscribe, 0b0010u);
-      pkt->add(len);
+      pkt->add_length(len);
       pkt->add(static_cast<std::uint8_t>(packet_id >> 8));
       pkt->add(static_cast<std::uint8_t>(packet_id & 0xff));
       for (auto topic : topics)

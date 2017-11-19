@@ -46,6 +46,22 @@ MqttPacket::add(std::string str)
 }
 
 void
+MqttPacket::add_length(std::size_t size)
+{
+  do
+    {
+      uint8_t b = size % 128;
+      size >>= 7;
+
+      if (size > 0)
+        {
+          b |= 128;
+        }
+      data_.push_back(b);
+    } while (size > 0);
+}
+
+void
 MqttPacket::add_fixed_header(os::PacketType type, std::uint8_t flags)
 {
   data_.push_back((static_cast<std::uint8_t>(type) << 4) | (flags & 0x0f));
