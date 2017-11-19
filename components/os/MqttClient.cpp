@@ -280,12 +280,12 @@ MqttClient::send_publish(std::string topic, std::string payload, PublishOptions 
         }
 
       len += topic.size() + 2;
-      len += payload.size() + 2;
+      len += payload.size();
 
       pkt->add_fixed_header(os::PacketType::Publish, static_cast<uint8_t>(flags.value()));
       pkt->add_length(len);
       pkt->add(topic);
-      pkt->add(payload);
+      pkt->append(payload);
 
       hexdump(tag, pkt->data(), pkt->size());
 
