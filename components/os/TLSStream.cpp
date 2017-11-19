@@ -68,6 +68,7 @@ TLSStream::~TLSStream()
 {
   if (server_fd.fd != -1)
     {
+      lwip_close(server_fd.fd);
       loop->unnotify(server_fd.fd);
     }
 
