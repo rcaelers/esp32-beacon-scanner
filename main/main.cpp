@@ -67,6 +67,9 @@ public:
   {
     gpio_pad_select_gpio(LED_GPIO);
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
+
+    std::string mac = wifi.get_mac();
+    topic_config = "/beaconscanner/" + mac + "/config";
   }
 
 private:
@@ -110,10 +113,11 @@ private:
     if (connected)
       {
         ESP_LOGI(tag, "-> MQTT connected");
+        ESP_LOGI(tag, "-> Requesting configuration at %s", topic_config.c_str());
+        mqtt->subscribe(topic_config);
 #ifdef  CONFIG_BT_ENABLED
         beacon_scanner.start();
 #endif
-        mqtt->subscribe("test/test");
       }
     else
       {
@@ -126,7 +130,14 @@ private:
 
   void on_mqtt_data(std::string topic, std::string payload)
   {
-    ESP_LOGI(tag, "-> MQTT %s -> %s", topic.c_str(), payload.c_str());
+    ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+
+    if (topic == topic_config)
+      {
+// #ifdef  CONFIG_BT_ENABLED
+//         beacon_scanner.start();
+// #endif
+      }
   }
 
 #ifdef  CONFIG_BT_ENABLED
@@ -156,7 +167,6 @@ private:
 #endif
 
     wifi_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
-
     wifi.connect();
 
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
@@ -173,6 +183,7 @@ private:
   std::shared_ptr<os::MqttClient> mqtt;
   os::Task task;
   os::MainLoop::timer_id wifi_timer = 0;
+  std::string topic_config;
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };
