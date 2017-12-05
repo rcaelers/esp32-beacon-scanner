@@ -24,11 +24,13 @@
 #include <string>
 
 #include "os/Wifi.hpp"
-#include "os/BeaconScanner.hpp"
+#include "os/BLEScanner.hpp"
 #include "os/Slot.hpp"
 #include "os/Task.hpp"
 #include "os/MainLoop.hpp"
 #include "os/MqttClient.hpp"
+#include "os/hexdump.hpp"
+
 
 extern "C"
 {
@@ -53,16 +55,18 @@ extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 // #define NUM_RECORDS 100
 // static heap_trace_record_t trace_record[NUM_RECORDS]; // This buffer must be in internal RAM
 
+#define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00)>>8) + (((x)&0xFF)<<8))
+
 class Main
 {
 public:
   Main():
 #ifdef  CONFIG_BT_ENABLED
-    beacon_scanner(os::BeaconScanner::instance()),
+    beacon_scanner(os::BLEScanner::instance()),
 #endif
     wifi(os::Wifi::instance()),
     loop(std::make_shared<os::MainLoop>()),
-    mqtt(std::make_shared<os::MqttClient>(loop, "BeaconScanner", MQTT_HOST, 8883)),
+    mqtt(std::make_shared<os::MqttClient>(loop, "BLEScanner", MQTT_HOST, 8883)),
     task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
@@ -137,9 +141,46 @@ private:
   }
 
 #ifdef  CONFIG_BT_ENABLED
-  void on_beacon_scanner_scan_result(os::BeaconScanner::ScanResult result)
+  void on_beacon_scanner_scan_result(os::BLEScanner::ScanResult result)
   {
     static int led_state = 0;
+
+    if (is_ibeacon(result.adv_data))
+      {
+        typedef struct
+        {
+          uint8_t flags[3];
+          uint8_t length;
+          uint8_t type;
+          uint16_t company_id;
+          uint16_t beacon_type;
+          uint8_t proximity_uuid[16];
+          uint16_t major;
+          uint16_t minor;
+          int8_t measured_power;
+        } __attribute__((packed)) ibeacon_data_t;
+
+
+        const ibeacon_data_t *ibeacon_data = reinterpret_cast<const ibeacon_data_t *>(result.adv_data.data());
+        ESP_LOGI(tag, "----------iBeacon Found----------");
+        ESP_LOGI(tag, "BLE: Device address: %s", result.mac.c_str());
+        esp_log_buffer_hex("BLE: Proximity UUID:", ibeacon_data->proximity_uuid, ESP_UUID_LEN_128);
+        uint16_t major = ENDIAN_CHANGE_U16(ibeacon_data->major);
+        uint16_t minor = ENDIAN_CHANGE_U16(ibeacon_data->minor);
+        ESP_LOGI(tag, "Major: 0x%04x (%d)", major, major);
+        ESP_LOGI(tag, "Minor: 0x%04x (%d)", minor, minor);
+        ESP_LOGI(tag, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->measured_power);
+        ESP_LOGI(tag, "RSSI of packet:%d dbm", result.rssi);
+        ESP_LOGI(tag, "---------------------------------");
+      }
+    else
+      {
+        ESP_LOGI(tag, "---------- Found----------");
+        os::hexdump(tag, reinterpret_cast<const uint8_t *>(result.adv_data.data()), result.adv_data.size());
+        ESP_LOGI(tag, "--------------------------");
+      }
+
+
 
     ESP_LOGI(tag, "-> BT result %s %d (free %d)", result.mac.c_str(), result.rssi, heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
     led_state ^= 1;
@@ -161,7 +202,6 @@ private:
 
     if (mqtt->connected().get())
       {
-        ESP_LOGI(tag, "-> Scan: %s", payload.c_str());
         mqtt->publish("test/beacon", payload);
       }
     scan_results.clear();
@@ -183,6 +223,29 @@ private:
 #ifdef  CONFIG_BT_ENABLED
     beacon_scanner.stop();
 #endif
+  }
+
+  bool is_ibeacon(std::string adv_data)
+  {
+    static uint8_t ibeacon_prefix[] =
+      {
+        0x02, 0x01, 0x00, 0x1A, 0xFF, 0x4C, 0x00, 0x02, 0x15
+      };
+
+    if (adv_data.size() != 30)
+      {
+        return false;
+      }
+
+    for (int i = 0; i < sizeof(ibeacon_prefix); i++)
+      {
+        if ( (adv_data[i] != ibeacon_prefix[i]) && (i != 2))
+          {
+            return false;
+          }
+      }
+
+    return true;
   }
 
   void main_task()
@@ -208,7 +271,7 @@ private:
   }
 
 #ifdef  CONFIG_BT_ENABLED
-  os::BeaconScanner &beacon_scanner;
+  os::BLEScanner &beacon_scanner;
 #endif
   os::Wifi &wifi;
   std::shared_ptr<os::MainLoop> loop;

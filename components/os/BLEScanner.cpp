@@ -18,12 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "os/BeaconScanner.hpp"
+#include "os/BLEScanner.hpp"
+
+#include <sstream>
+#include <iomanip>
 
 #ifdef CONFIG_BT_ENABLED
 
 #include "bt.h"
-#include "esp_bt_main.h"
+#include "controller.h"
+
 #include "esp_log.h"
 
 #include "os/Task.hpp"
@@ -32,31 +36,32 @@ static const char tag[] = "BLE";
 
 using namespace os;
 
-static esp_ble_scan_params_t ble_scan_params = {
-  .scan_type              = BLE_SCAN_TYPE_PASSIVE,
-  .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
-  .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
-  .scan_interval          = 0x50,
-  .scan_window            = 0x30,
-};
+static esp_ble_scan_params_t ble_scan_params =
+  {
+    .scan_type              = BLE_SCAN_TYPE_PASSIVE,
+    .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
+    .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
+    .scan_interval          = 0x50,
+    .scan_window            = 0x30,
+  };
 
-BeaconScanner::BeaconScanner()
+BLEScanner::BLEScanner()
 {
   init();
 }
 
-BeaconScanner::~BeaconScanner()
+BLEScanner::~BLEScanner()
 {
 }
 
 void
-BeaconScanner::gap_event_handler_static(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+BLEScanner::gap_event_handler_static(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
-  BeaconScanner::instance().gap_event_handler(event, param);
+  BLEScanner::instance().gap_event_handler(event, param);
 }
 
 void
-BeaconScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+BLEScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
   switch (event)
     {
@@ -96,24 +101,8 @@ BeaconScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_pa
           {
           case ESP_GAP_SEARCH_INQ_RES_EVT:
             {
-              static uint8_t ibeacon_prefix[] =
-                {
-                  0x02, 0x01, 0x00, 0x1A, 0xFF, 0x4C, 0x00, 0x02, 0x15
-                };
-
-              uint8_t *addr = scan_result->scan_rst.bda;
-
-              scan_result->scan_rst.ble_adv[2]  = 0x00;
-              for (int i = 0; i < sizeof(ibeacon_prefix); i++) {
-                if (scan_result->scan_rst.ble_adv[i] != ibeacon_prefix[i]) {
-                  return;
-                }
-              }
-
-              char mac[18];
-              sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-
-              signal_scan_result(ScanResult(scan_result->scan_rst.rssi, mac));
+              ScanResult beacon(&scan_result->scan_rst);
+              signal_scan_result(std::move(beacon));
               break;
             }
 
@@ -136,9 +125,9 @@ BeaconScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_pa
 }
 
 void
-BeaconScanner::init()
+BLEScanner::init()
 {
-  ESP_LOGI(tag, "BeaconScanner::init");
+  ESP_LOGI(tag, "BLEScanner::init");
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 
   esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
@@ -149,7 +138,7 @@ BeaconScanner::init()
 }
 
 void
-BeaconScanner::deinit()
+BLEScanner::deinit()
 {
   esp_bluedroid_disable();
   esp_bluedroid_deinit();
@@ -158,28 +147,54 @@ BeaconScanner::deinit()
 }
 
 void
-BeaconScanner::start()
+BLEScanner::start()
 {
   esp_ble_gap_register_callback(gap_event_handler_static);
   esp_ble_gap_set_scan_params(&ble_scan_params);
 }
 
 void
-BeaconScanner::stop()
+BLEScanner::stop()
 {
   esp_ble_gap_stop_scanning();
 }
 
 os::Signal<void()> &
-BeaconScanner::scan_complete_signal()
+BLEScanner::scan_complete_signal()
 {
   return signal_scan_complete;
 }
 
-os::Signal<void(os::BeaconScanner::ScanResult)> &
-BeaconScanner::scan_result_signal()
+os::Signal<void(os::BLEScanner::ScanResult)> &
+BLEScanner::scan_result_signal()
 {
   return signal_scan_result;
+}
+
+BLEScanner::ScanResult::ScanResult(esp_ble_gap_cb_param_t::ble_scan_result_evt_param *scan_result)
+  : mac(mac_to_string(scan_result->bda)),
+    adv_data(reinterpret_cast<char *>(scan_result->ble_adv), scan_result->adv_data_len),
+    rssi(scan_result->rssi)
+{
+}
+
+std::string
+BLEScanner::ScanResult::mac_to_string(uint8_t *addr)
+{
+  std::stringstream stream;
+  stream << std::hex << std::setfill('0');
+  stream << std::setw(2);
+
+  for (int i= 0; i < 6; i++)
+    {
+      stream << (int)addr[i];
+      if (i != 5)
+        {
+          stream << ':';
+        }
+    }
+
+  return stream.str();
 }
 
 #endif

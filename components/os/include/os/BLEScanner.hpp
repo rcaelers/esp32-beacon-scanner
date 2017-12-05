@@ -28,6 +28,7 @@
 #include <string>
 
 #include "esp_gap_ble_api.h"
+#include "esp_bt_main.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -36,63 +37,30 @@
 
 namespace os
 {
-  class BeaconScanner
+  class BLEScanner
   {
   public:
-    static BeaconScanner &instance()
+    static BLEScanner &instance()
     {
-      static BeaconScanner instance;
+      static BLEScanner instance;
       return instance;
     }
 
     struct ScanResult
     {
       ScanResult() = default;
-      ScanResult(int rssi, std::string mac)
-        : rssi(rssi), mac(mac)
-      {
-      }
+      ScanResult(esp_ble_gap_cb_param_t::ble_scan_result_evt_param *scan_result);
 
-
-      ScanResult(ScanResult &&lhs)
-        : rssi(std::move(lhs.rssi)),
-          mac(std::move(lhs.mac))
-      {
-      }
-
-      ScanResult &operator=(ScanResult &&lhs)
-      {
-        if (this != &lhs)
-          {
-            rssi = std::move(lhs.rssi);
-            mac = std::move(lhs.mac);
-          }
-        return *this;
-      }
-
-      ScanResult(const ScanResult &lhs)
-        : rssi(lhs.rssi),
-          mac(lhs.mac)
-      {
-      }
-
-      ScanResult &operator=(const ScanResult &lhs)
-      {
-        if (this != &lhs)
-          {
-            rssi = lhs.rssi;
-            mac = lhs.mac;
-          }
-        return *this;
-      }
-
-      int rssi;
-      // TODO: use custom Mac address class.
+    private:
+      std::string mac_to_string(uint8_t *addr);
+    public:
       std::string mac;
+      std::string adv_data;
+      int rssi;
     };
 
-    BeaconScanner(const BeaconScanner&) = delete;
-    BeaconScanner& operator=(const BeaconScanner&) = delete;
+    BLEScanner(const BLEScanner&) = delete;
+    BLEScanner& operator=(const BLEScanner&) = delete;
 
     void start();
     void stop();
@@ -101,8 +69,8 @@ namespace os
     os::Signal<void(ScanResult)> &scan_result_signal();
 
   private:
-    BeaconScanner();
-    ~BeaconScanner();
+    BLEScanner();
+    ~BLEScanner();
 
     static void gap_event_handler_static(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
     void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
