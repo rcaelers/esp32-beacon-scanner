@@ -505,7 +505,7 @@ MqttClient::handle_connect_ack()
       else
         {
           ESP_LOGI(tag, "Info: Connect OK");
-          ping_timer = loop->add_periodic_timer(std::chrono::milliseconds(keep_alive_sec * 500), std::bind(&MqttClient::send_ping, this));
+          ping_timer = loop->add_periodic_timer(std::chrono::milliseconds(ping_interval_sec * 1000), std::bind(&MqttClient::send_ping, this));
           connected_property.set(true);
         }
     }

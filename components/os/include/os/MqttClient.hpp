@@ -120,7 +120,8 @@ namespace os
     os::Property<bool> connected_property { false };
     int pending_ping_count = 0;
 
-    static constexpr int keep_alive_sec = 10;
+    static constexpr int ping_interval_sec = 15;
+    static constexpr int keep_alive_sec = 60;
     static constexpr int pending_ping_count_limit = 5;
   };
 }
