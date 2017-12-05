@@ -68,7 +68,7 @@ TLSStream::~TLSStream()
 {
   if (server_fd.fd != -1)
     {
-      lwip_close(server_fd.fd);
+      ::close(server_fd.fd);
       loop->unnotify(server_fd.fd);
     }
 
@@ -181,12 +181,12 @@ TLSStream::on_resolved(std::string host, struct addrinfo *addr_list, connect_slo
       int ret = mbedtls_net_set_nonblock(&server_fd);
       throw_if_failure("mbedtls_net_set_nonblock", ret);
 
-      ret = lwip_connect(fd, addr->ai_addr, addr->ai_addrlen);
+      ret = ::connect(fd, addr->ai_addr, addr->ai_addrlen);
       ESP_LOGD(tag, "connect %s: ret = %x errno %d", host.c_str(), -ret, errno);
 
       if (ret < 0 && errno != EINPROGRESS)
         {
-          lwip_close(fd);
+          ::close(fd);
           server_fd.fd = -1;
           // TODO: use errno
           throw std::system_error(NetworkErrc::InternalError, "Could not connect");

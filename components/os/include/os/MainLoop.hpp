@@ -39,9 +39,6 @@
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 
-#undef connect
-#undef bind
-
 namespace os
 {
   class MainLoop : public std::enable_shared_from_this<MainLoop>

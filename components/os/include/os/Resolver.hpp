@@ -29,8 +29,6 @@
 #include <unistd.h>
 #include <netdb.h>
 
-#undef bind
-
 #include "os/Task.hpp"
 #include "os/Queue.hpp"
 #include "os/Slot.hpp"

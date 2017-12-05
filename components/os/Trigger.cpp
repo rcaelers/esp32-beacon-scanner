@@ -29,8 +29,6 @@
 
 #include "esp_log.h"
 
-#undef bind
-
 using namespace os;
 
 Trigger::Trigger()
@@ -68,21 +66,21 @@ Trigger::init_pipe()
   addr.sin_addr.s_addr = htonl(0x7f000001);
   socklen_t addr_len = sizeof(addr);
 
-  int rc = lwip_bind(pipe_read, (struct sockaddr *)&addr, addr_len);
+  int rc = bind(pipe_read, (struct sockaddr *)&addr, addr_len);
   if (rc < 0) throw std::runtime_error("bind");
 
-  rc = lwip_getsockname(pipe_read, (struct sockaddr *)&addr, &addr_len);
+  rc = getsockname(pipe_read, (struct sockaddr *)&addr, &addr_len);
   if (rc < 0) throw std::runtime_error("getsockname");
 
   addr.sin_addr.s_addr = htonl(0x7f000001);
-  rc = lwip_connect(pipe_write, (struct sockaddr *)&addr, addr_len);
+  rc = connect(pipe_write, (struct sockaddr *)&addr, addr_len);
   if (rc < 0) throw std::runtime_error("connect");
 
   rc = getsockname(pipe_write, (struct sockaddr *)&addr, &addr_len);
   if (rc < 0) throw std::runtime_error("getsockname");
 
   addr.sin_addr.s_addr = htonl(0x7f000001);
-  rc = lwip_connect(pipe_read, (struct sockaddr *)&addr, addr_len);
+  rc = connect(pipe_read, (struct sockaddr *)&addr, addr_len);
   if (rc < 0) throw std::runtime_error("connect");
 
   int flags = fcntl(pipe_read, F_GETFL, 0);

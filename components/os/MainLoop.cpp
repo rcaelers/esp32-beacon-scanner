@@ -35,8 +35,6 @@
 
 #include "os/hexdump.hpp"
 
-#undef bind
-
 static const char tag[] = "MAINLOOP";
 
 using namespace os;
