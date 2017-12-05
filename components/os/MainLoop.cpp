@@ -349,7 +349,6 @@ MainLoop::handle_timeout(poll_list_type &poll_list_copy)
           now > pd.start_time + pd.timeout_duration)
         {
           unnotify(pd.fd, pd.type);
-          ESP_LOGE(tag, "Timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
           try
             {
               pd.callback(os::NetworkErrc::Timeout);
@@ -379,7 +378,6 @@ MainLoop::handle_io(poll_list_type &poll_list_copy)
       if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
            (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)))
         {
-          ESP_LOGD(tag, "Select for %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
           unnotify(pd.fd, pd.type);
           try
             {
