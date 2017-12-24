@@ -51,10 +51,10 @@ namespace os
       ScanResult() = default;
       ScanResult(esp_ble_gap_cb_param_t::ble_scan_result_evt_param *scan_result);
 
-    private:
-      std::string mac_to_string(uint8_t *addr);
+      std::string bda_as_string();
+
     public:
-      std::string mac;
+      uint8_t bda[6];
       std::string adv_data;
       int rssi;
     };

@@ -22,6 +22,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <string.h>
 
 #ifdef CONFIG_BT_ENABLED
 
@@ -172,14 +173,14 @@ BLEScanner::scan_result_signal()
 }
 
 BLEScanner::ScanResult::ScanResult(esp_ble_gap_cb_param_t::ble_scan_result_evt_param *scan_result)
-  : mac(mac_to_string(scan_result->bda)),
-    adv_data(reinterpret_cast<char *>(scan_result->ble_adv), scan_result->adv_data_len),
+  : adv_data(reinterpret_cast<char *>(scan_result->ble_adv), scan_result->adv_data_len),
     rssi(scan_result->rssi)
 {
+  memcpy(bda, scan_result->bda, 6);
 }
 
 std::string
-BLEScanner::ScanResult::mac_to_string(uint8_t *addr)
+BLEScanner::ScanResult::bda_as_string()
 {
   std::stringstream stream;
   stream << std::hex << std::setfill('0');
@@ -187,7 +188,7 @@ BLEScanner::ScanResult::mac_to_string(uint8_t *addr)
 
   for (int i= 0; i < 6; i++)
     {
-      stream << (int)addr[i];
+      stream << (int)bda[i];
       if (i != 5)
         {
           stream << ':';

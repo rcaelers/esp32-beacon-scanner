@@ -30,7 +30,9 @@
 #include "os/MainLoop.hpp"
 #include "os/MqttClient.hpp"
 #include "os/hexdump.hpp"
+#include "os/json.hpp"
 
+#include "string.h"
 
 extern "C"
 {
@@ -43,6 +45,8 @@ extern "C"
 
 #include "user_config.h"
 
+using json = nlohmann::json;
+
 static const char tag[] = "BEACON-SCANNER";
 
 extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
@@ -54,8 +58,6 @@ extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 
 // #define NUM_RECORDS 100
 // static heap_trace_record_t trace_record[NUM_RECORDS]; // This buffer must be in internal RAM
-
-#define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00)>>8) + (((x)&0xFF)<<8))
 
 class Main
 {
@@ -71,10 +73,32 @@ public:
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
 
     std::string mac = wifi.get_mac();
-    topic_config = "/beaconscanner/" + mac + "/config";
+    topic_config = "/beaconscanner/config/" + mac;
+    topic_scan = "/beaconscanner/scan/" + mac;
   }
 
 private:
+  // https://stackoverflow.com/questions/180947/base64-decode-snippet-in-c
+  static std::string base64_encode(const std::string &in)
+  {
+    std::string out;
+
+    int val=0, valb=-6;
+    for (char c : in)
+      {
+        val = (val<<8) + c;
+        valb += 8;
+        while (valb>=0)
+          {
+            out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(val>>valb)&0x3F]);
+            valb-=6;
+          }
+      }
+    if (valb>-6) out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[((val<<8)>>(valb+8))&0x3F]);
+    while (out.size()%4) out.push_back('=');
+    return out;
+  }
+
   void on_wifi_system_event(system_event_t event)
   {
     ESP_LOGI(tag, "-> System event %d", event.event_id);
@@ -141,62 +165,28 @@ private:
   {
     static int led_state = 0;
 
-    if (is_ibeacon(result.adv_data))
-      {
-        typedef struct
-        {
-          uint8_t flags[3];
-          uint8_t length;
-          uint8_t type;
-          uint16_t company_id;
-          uint16_t beacon_type;
-          uint8_t proximity_uuid[16];
-          uint16_t major;
-          uint16_t minor;
-          int8_t measured_power;
-        } __attribute__((packed)) ibeacon_data_t;
-
-
-        const ibeacon_data_t *ibeacon_data = reinterpret_cast<const ibeacon_data_t *>(result.adv_data.data());
-        ESP_LOGI(tag, "----------iBeacon Found----------");
-        ESP_LOGI(tag, "BLE: Device address: %s", result.mac.c_str());
-        esp_log_buffer_hex("BLE: Proximity UUID:", ibeacon_data->proximity_uuid, ESP_UUID_LEN_128);
-        uint16_t major = ENDIAN_CHANGE_U16(ibeacon_data->major);
-        uint16_t minor = ENDIAN_CHANGE_U16(ibeacon_data->minor);
-        ESP_LOGI(tag, "Major: 0x%04x (%d)", major, major);
-        ESP_LOGI(tag, "Minor: 0x%04x (%d)", minor, minor);
-        ESP_LOGI(tag, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->measured_power);
-        ESP_LOGI(tag, "RSSI of packet:%d dbm", result.rssi);
-        ESP_LOGI(tag, "---------------------------------");
-      }
-    else
-      {
-        ESP_LOGI(tag, "---------- Found----------");
-        os::hexdump(tag, reinterpret_cast<const uint8_t *>(result.adv_data.data()), result.adv_data.size());
-        ESP_LOGI(tag, "--------------------------");
-      }
-
-
-
-    ESP_LOGI(tag, "-> BT result %s %d (free %d)", result.mac.c_str(), result.rssi, heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
     led_state ^= 1;
     gpio_set_level(LED_GPIO, led_state);
-    scan_results[result.mac] = result.rssi;
+    scan_results[result.bda_as_string()] = result;
   }
 
   void on_scan_timer()
   {
-    ESP_LOGI(tag, "-> Scan timer");
-    std::string payload;
-
-    for (auto kv : scan_results)
-      {
-        payload += kv.first + ":" + std::to_string(kv.second) + "\n";
-      }
+    json j;
 
     if (mqtt->connected().get())
       {
-        mqtt->publish("test/beacon", payload);
+        for (auto kv : scan_results)
+          {
+            json jb;
+            jb["mac"] = kv.second.bda_as_string();
+            jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(kv.second.bda), sizeof(kv.second.bda)));
+            jb["rssi"] = kv.second.rssi;
+            jb["adv_data"] = base64_encode(kv.second.adv_data);
+            j.push_back(jb);
+          }
+
+        mqtt->publish(topic_scan, j.dump());
       }
     scan_results.clear();
   }
@@ -213,29 +203,6 @@ private:
     scan_timer = 0;
 
     beacon_scanner.stop();
-  }
-
-  bool is_ibeacon(std::string adv_data)
-  {
-    static uint8_t ibeacon_prefix[] =
-      {
-        0x02, 0x01, 0x00, 0x1A, 0xFF, 0x4C, 0x00, 0x02, 0x15
-      };
-
-    if (adv_data.size() != 30)
-      {
-        return false;
-      }
-
-    for (int i = 0; i < sizeof(ibeacon_prefix); i++)
-      {
-        if ( (adv_data[i] != ibeacon_prefix[i]) && (i != 2))
-          {
-            return false;
-          }
-      }
-
-    return true;
   }
 
   void main_task()
@@ -255,6 +222,7 @@ private:
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
     // heap_trace_init_standalone(trace_record, NUM_RECORDS);
     // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_ALL) );
+
     loop->run();
   }
 
@@ -265,8 +233,9 @@ private:
   os::Task task;
   os::MainLoop::timer_id wifi_timer = 0;
   os::MainLoop::timer_id scan_timer = 0;
-  std::map<std::string, int> scan_results;
+  std::map<std::string, os::BLEScanner::ScanResult> scan_results;
   std::string topic_config;
+  std::string topic_scan;
 
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };
