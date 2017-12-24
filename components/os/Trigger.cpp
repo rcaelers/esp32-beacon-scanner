@@ -21,6 +21,8 @@
 #define _GLIBCXX_USE_C99
 #include "os/Trigger.hpp"
 
+#include "os/ScopedLock.hpp"
+
 #include <system_error>
  #include <cstring>
 
@@ -92,17 +94,29 @@ Trigger::init_pipe()
 void
 Trigger::signal()
 {
-  uint8_t dummy = 0;
-  int ret = write(pipe_write, &dummy, 1);
-  assert(ret == 1 && "Failed to trigger");
+  os::ScopedLock l(mutex);
+  count++;
+  if (count == 1)
+  {
+    uint8_t dummy = 0;
+    int written = write(pipe_write, &dummy, 1);
+    assert(written == 1 && "Failed to trigger");
+  }
 }
 
-void
+int
 Trigger::confirm()
 {
-  uint8_t dummy;
-  int ret = read(pipe_read, &dummy, 1);
-  assert(ret == 1 && "Failed to confirm trigger");
+  os::ScopedLock l(mutex);
+  int ret = count;
+  if (count > 0)
+  {
+    uint8_t dummy;
+    int written = read(pipe_read, &dummy, 1);
+    assert(written == 1 && "Failed to confirm trigger");
+  }
+  count = 0;
+  return ret;
 }
 
 int

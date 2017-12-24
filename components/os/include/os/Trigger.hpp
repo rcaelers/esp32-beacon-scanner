@@ -21,6 +21,8 @@
 #ifndef OS_TRIGGER_HPP
 #define OS_TRIGGER_HPP
 
+#include "os/Mutex.hpp"
+
 namespace os
 {
   class Trigger
@@ -31,14 +33,16 @@ namespace os
 
     int get_poll_fd() const;
     void signal();
-    void confirm();
+    int confirm();
 
   private:
     void init_pipe();
 
   private:
+    mutable os::Mutex mutex;
     int pipe_read;
     int pipe_write;
+    int count;
   };
 }
 

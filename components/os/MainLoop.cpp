@@ -329,7 +329,6 @@ MainLoop::run()
           if (FD_ISSET(trigger.get_poll_fd(), &read_set))
             {
               handle_queue();
-              trigger.confirm();
             }
         }
     }
@@ -430,29 +429,30 @@ MainLoop::handle_timers()
 void
 MainLoop::handle_queue()
 {
-  while (true)
+  int size = trigger.confirm();
+
+  for (int i = 0; i < size; i++)
+  {
+    nonstd::optional<std::shared_ptr<os::ClosureBase>> obj(queue.pop_for(std::chrono::milliseconds(0)));
+    if (obj)
     {
-      nonstd::optional<std::shared_ptr<os::ClosureBase>> obj(queue.pop_for(std::chrono::milliseconds(0)));
-      if (! obj)
-        {
-          break;
-        }
       std::shared_ptr<os::ClosureBase> closure = *obj;
       try
-        {
-          closure->operator()();
-        }
+      {
+        closure->operator()();
+      }
       catch (const std::system_error &ex)
-        {
-          ESP_LOGE(tag, "System error while handling invoked function%d %s", ex.code().value(), ex.what());
-        }
+      {
+        ESP_LOGE(tag, "System error while handling invoked function%d %s", ex.code().value(), ex.what());
+      }
       catch (const std::exception &ex)
-        {
-          ESP_LOGE(tag, "Exception while handling invoked function: %s", ex.what());
-        }
+      {
+        ESP_LOGE(tag, "Exception while handling invoked function: %s", ex.what());
+      }
       catch(...)
-        {
-          ESP_LOGE(tag, "Exception while handling invoked function");
-        }
-    };
+      {
+        ESP_LOGE(tag, "Exception while handling invoked function");
+      }
+    }
+  }
 }
