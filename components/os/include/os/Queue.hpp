@@ -176,7 +176,7 @@ namespace os
     }
 
   private:
-    os::Mutex mutex;
+    mutable os::Mutex mutex;
     os::Semaphore produce_sem;
     os::Semaphore consume_sem;
     std::deque<T> queue_data;
