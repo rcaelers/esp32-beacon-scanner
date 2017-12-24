@@ -225,7 +225,14 @@ MainLoop::get_first_expiring_timer_duration()
   ScopedLock l(timer_list_mutex);
 
   auto iter = get_first_expiring_timer();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(iter->expire_time - std::chrono::system_clock::now());
+  if (iter != timers.end())
+    {
+      return std::chrono::duration_cast<std::chrono::milliseconds>(iter->expire_time - std::chrono::system_clock::now());
+    }
+  else
+    {
+      return std::chrono::milliseconds::max();
+    }
 }
 
 int
