@@ -240,12 +240,16 @@ MqttClient::send_ping()
     {
       std::shared_ptr<MqttPacket> pkt = std::make_shared<MqttPacket>();
 
+      ESP_LOGD(tag, "send_ping %d", pending_ping_count);
+
       pkt->add_fixed_header(os::PacketType::PingReq, 0);
       pkt->add(0);
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send ping", bytes_transferred, pkt->size(), ec);
           pending_ping_count++;
+          ESP_LOGD(tag, "send_ping %d (limit %d)", pending_ping_count, pending_ping_count_limit);
+
           if (pending_ping_count > pending_ping_count_limit)
             {
               handle_error("ping response timeout ", MqttErrc::Timeout);
@@ -638,6 +642,7 @@ MqttClient::handle_ping_response()
 {
   std::error_code ec;
   pending_ping_count--;
+  ESP_LOGD(tag, "handle_ping_response %d (limit %d)", pending_ping_count, pending_ping_count_limit);
   return ec;
 }
 
