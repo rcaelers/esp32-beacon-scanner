@@ -61,9 +61,7 @@ class Main
 {
 public:
   Main():
-#ifdef  CONFIG_BT_ENABLED
     beacon_scanner(os::BLEScanner::instance()),
-#endif
     wifi(os::Wifi::instance()),
     loop(std::make_shared<os::MainLoop>()),
     mqtt(std::make_shared<os::MqttClient>(loop, "BLEScanner", MQTT_HOST, 8883)),
@@ -134,13 +132,11 @@ private:
 
     if (topic == topic_config)
       {
-// #ifdef  CONFIG_BT_ENABLED
-//         beacon_scanner.start();
-// #endif
+        // TODO:
+        // beacon_scanner.start();
       }
   }
 
-#ifdef  CONFIG_BT_ENABLED
   void on_beacon_scanner_scan_result(os::BLEScanner::ScanResult result)
   {
     static int led_state = 0;
@@ -188,8 +184,6 @@ private:
     scan_results[result.mac] = result.rssi;
   }
 
-#endif
-
   void on_scan_timer()
   {
     ESP_LOGI(tag, "-> Scan timer");
@@ -210,9 +204,7 @@ private:
   void start_beacon_scan()
   {
     scan_timer = loop->add_periodic_timer(std::chrono::milliseconds(1000), std::bind(&Main::on_scan_timer, this));
-#ifdef  CONFIG_BT_ENABLED
     beacon_scanner.start();
-#endif
   }
 
   void stop_beacon_scan()
@@ -220,9 +212,7 @@ private:
     loop->cancel_timer(scan_timer);
     scan_timer = 0;
 
-#ifdef  CONFIG_BT_ENABLED
     beacon_scanner.stop();
-#endif
   }
 
   bool is_ibeacon(std::string adv_data)
@@ -257,9 +247,7 @@ private:
     wifi.system_event_signal().connect(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1));
     wifi.connected().connect(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1));
 
-#ifdef CONFIG_BT_ENABLED
     beacon_scanner.scan_result_signal().connect(loop, std::bind(&Main::on_beacon_scanner_scan_result, this, std::placeholders::_1));
-#endif
 
     wifi_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
     wifi.connect();
@@ -270,9 +258,7 @@ private:
     loop->run();
   }
 
-#ifdef  CONFIG_BT_ENABLED
   os::BLEScanner &beacon_scanner;
-#endif
   os::Wifi &wifi;
   std::shared_ptr<os::MainLoop> loop;
   std::shared_ptr<os::MqttClient> mqtt;
