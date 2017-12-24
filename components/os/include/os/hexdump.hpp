@@ -25,6 +25,7 @@
 
 namespace os
 {
+  void hexdump(const char *tag, const char *prefix, const uint8_t *data, std::size_t size);
   void hexdump(const char *tag, const uint8_t *data, std::size_t size);
 }
 

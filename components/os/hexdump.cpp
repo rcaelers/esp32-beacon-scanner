@@ -31,6 +31,12 @@ namespace os
   void
   hexdump(const char *tag, const uint8_t *data, std::size_t size)
   {
+    hexdump(tag, data, size);
+  }
+
+  void
+  hexdump(const char *tag, const char *prefix, const uint8_t *data, std::size_t size)
+  {
 
     int num_lines = (size + 15) / 16;
     int index = 0;
@@ -71,7 +77,7 @@ namespace os
               }
           }
 
-        ESP_LOGD(tag, "%s",  ss.str().c_str());
+        ESP_LOGD(tag, "%s%s", prefix, ss.str().c_str());
         index += 16;
       }
   }

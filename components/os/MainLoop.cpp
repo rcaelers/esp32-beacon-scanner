@@ -272,10 +272,8 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
   int r = 0;
 
 #if DEBUG_SELECT
-  ESP_LOGD(tag, "IN Read set:");
-  hexdump(tag, reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
-  ESP_LOGD(tag, "IN Write set:");
-  hexdump(tag, reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
+  hexdump(tag, "IN r: ", reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
+  hexdump(tag, "IN w: ", reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
 #endif
 
   if (timeout != std::chrono::milliseconds::max())
@@ -283,12 +281,21 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
       timeval tv;
       tv.tv_sec = timeout.count() / 1000;
       tv.tv_usec = (timeout.count() % 1000) * 1000;
+#if DEBUG_SELECT
+      ESP_LOGD(tag, "Select timeout %d %d:", static_cast<int>(tv.tv_sec), static_cast<int>(tv.tv_usec / 1000));
+#endif
       r = select(max_fd + 1, &read_set, &write_set, nullptr, &tv);
     }
   else
     {
       r = select(max_fd + 1, &read_set, &write_set, nullptr, nullptr);
     }
+
+#if DEBUG_SELECT
+  ESP_LOGD(tag, "Select ret = %d:", r);
+  hexdump(tag, "OUT r: ", reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
+  hexdump(tag, "OUT w: ", reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
+#endif
 
   return r;
 }
@@ -311,13 +318,6 @@ MainLoop::run()
 
       int r = do_select(poll_list_copy);
 
-#if DEBUG_SELECT
-      ESP_LOGD(tag, "Select: %d:", r);
-      ESP_LOGD(tag, "Read set:");
-      hexdump(tag, reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
-      ESP_LOGD(tag, "Write set:");
-      hexdump(tag, reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
-#endif
       if (r == -1)
         {
           const char* error = strerror(errno);
