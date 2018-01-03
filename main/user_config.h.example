@@ -4,9 +4,14 @@
 #define WIFI_SSID "yourssid"
 #define WIFI_PASS "yourpass"
 
+// Optional MQTT username and password.
+// Can be omitted if client side certificates are used.
 #define MQTT_USER "yourusername"
 #define MQTT_PASS "yourpass"
 
 #define MQTT_HOST "host"
+#define MQTT_PORT 8883
+
+#define MQTT_USE_TLS 1
 
 #endif

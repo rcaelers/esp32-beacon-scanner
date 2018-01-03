@@ -66,7 +66,7 @@ public:
     beacon_scanner(os::BLEScanner::instance()),
     wifi(os::Wifi::instance()),
     loop(std::make_shared<os::MainLoop>()),
-    mqtt(std::make_shared<os::MqttClient>(loop, "BLEScanner", MQTT_HOST, 8883)),
+    mqtt(std::make_shared<os::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT)),
     task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
@@ -122,8 +122,16 @@ private:
       {
         ESP_LOGI(tag, "-> Wifi connected");
         loop->cancel_timer(wifi_timer);
+#ifdef MQTT_USER
+        mqtt->set_username(MQTT_USER);
+#endif
+#ifdef MQTT_PASS
+        mqtt->set_password(MQTT_PASS);
+#endif
+#ifdef MQTT_USE_TLS
         mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
         mqtt->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+#endif
         mqtt->set_callback(os::make_slot(loop, [this] (std::string topic, std::string payload) { on_mqtt_data(topic, payload);} ));
         mqtt->connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
         mqtt->connect();
