@@ -1,7 +1,7 @@
 Beacon scanner for ESP32
 ================================
 
-An BLE scanner application for ESP32 that publishes all detected BLE devices using MQTT.
+A BLE scanner application for ESP32 that publishes all detected BLE devices using MQTT.
 
 The ultimate goal of the project is server-side indoor positioning using multiple ESP32 devices that detect beacons.
 
