@@ -174,9 +174,9 @@ MqttClient::send_connect()
           len += username.size() + 2;
         }
 
-      if (username != "")
+      if (password != "")
         {
-          flags |= ConnectFlags::UserName;
+          flags |= ConnectFlags::Password;
           len += password.size() + 2;
         }
 
