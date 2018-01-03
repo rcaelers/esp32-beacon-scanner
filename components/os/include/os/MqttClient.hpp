@@ -26,7 +26,7 @@
 #include <list>
 #include <system_error>
 
-#include "os/TLSStream.hpp"
+#include "os/Stream.hpp"
 #include "os/bitmask.hpp"
 
 namespace os
@@ -97,7 +97,7 @@ namespace os
 
   private:
     std::shared_ptr<MainLoop> loop;
-    std::shared_ptr<os::TLSStream> sock;
+    std::shared_ptr<os::Stream> sock;
     std::string client_id;
     std::string host;
     int port = 0;

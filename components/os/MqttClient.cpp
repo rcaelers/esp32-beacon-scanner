@@ -29,6 +29,8 @@
 
 #include "os/MqttPacket.hpp"
 #include "os/MqttErrors.hpp"
+#include "os/TCPStream.hpp"
+#include "os/TLSStream.hpp"
 
 static const char tag[] = "MQTT";
 
@@ -36,7 +38,6 @@ using namespace os;
 
 MqttClient::MqttClient(std::shared_ptr<MainLoop> loop, std::string client_id, std::string host, int port) :
   loop(loop),
-  sock(std::make_shared<TLSStream>(loop)),
   client_id(std::move(client_id)),
   host(std::move(host)),
   port(port)
@@ -93,8 +94,23 @@ MqttClient::connect()
   try
     {
       auto self = shared_from_this();
-      sock->set_client_certificate(client_cert, client_key);
-      sock->set_ca_certificate(ca_cert);
+
+      if (ca_cert != nullptr)
+        {
+          std::shared_ptr<TLSStream> tls_sock = std::make_shared<TLSStream>(loop);
+
+          if (client_cert != nullptr && client_key != nullptr)
+            {
+              tls_sock->set_client_certificate(client_cert, client_key);
+            }
+          tls_sock->set_ca_certificate(ca_cert);
+
+          sock = tls_sock;
+        }
+      else
+        {
+          sock = std::make_shared<TCPStream>(loop);
+        }
       sock->connect(host, port, [this, self] (std::error_code ec) {
           if (!ec)
             {
@@ -664,8 +680,6 @@ MqttClient::handle_error(std::string what, std::error_code ec)
       sock->close();
       sock.reset();
       heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
-      sock = std::make_shared<TLSStream>(loop);
-      // TODO: add delay;
       connect();
     }
 }
