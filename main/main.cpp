@@ -73,8 +73,8 @@ public:
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
 
     std::string mac = wifi.get_mac();
-    topic_config = "/beaconscanner/config/" + mac;
-    topic_scan = "/beaconscanner/scan/" + mac;
+    topic_config = "beaconscanner/config/" + mac;
+    topic_scan = "beaconscanner/scan/" + mac;
   }
 
 private:
