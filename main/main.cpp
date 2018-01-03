@@ -175,7 +175,7 @@ private:
 
     led_state ^= 1;
     gpio_set_level(LED_GPIO, led_state);
-    scan_results[result.bda_as_string()] = result;
+    scan_results.push_back(result);
   }
 
   void on_scan_timer()
@@ -184,13 +184,14 @@ private:
 
     if (mqtt->connected().get())
       {
-        for (auto kv : scan_results)
+        for (auto r : scan_results)
           {
+            ESP_LOGI(tag, "on_scan_timer %s (free %d)", r.bda_as_string().c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
             json jb;
-            jb["mac"] = kv.second.bda_as_string();
-            jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(kv.second.bda), sizeof(kv.second.bda)));
-            jb["rssi"] = kv.second.rssi;
-            jb["adv_data"] = base64_encode(kv.second.adv_data);
+            jb["mac"] = r.bda_as_string();
+            jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(r.bda), sizeof(r.bda)));
+            jb["rssi"] = r.rssi;
+            jb["adv_data"] = base64_encode(r.adv_data);
             j.push_back(jb);
           }
 
@@ -241,7 +242,7 @@ private:
   os::Task task;
   os::MainLoop::timer_id wifi_timer = 0;
   os::MainLoop::timer_id scan_timer = 0;
-  std::map<std::string, os::BLEScanner::ScanResult> scan_results;
+  std::list<os::BLEScanner::ScanResult> scan_results;
   std::string topic_config;
   std::string topic_scan;
 
