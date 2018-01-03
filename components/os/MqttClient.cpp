@@ -256,15 +256,12 @@ MqttClient::send_ping()
     {
       std::shared_ptr<MqttPacket> pkt = std::make_shared<MqttPacket>();
 
-      ESP_LOGD(tag, "send_ping %d", pending_ping_count);
-
       pkt->add_fixed_header(os::PacketType::PingReq, 0);
       pkt->add(0);
       auto self = shared_from_this();
       sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send ping", bytes_transferred, pkt->size(), ec);
           pending_ping_count++;
-          ESP_LOGD(tag, "send_ping %d (limit %d)", pending_ping_count, pending_ping_count_limit);
 
           if (pending_ping_count > pending_ping_count_limit)
             {
@@ -625,14 +622,15 @@ MqttClient::handle_subscribe_ack()
           throw std::system_error(MqttErrc::ProtocolError, "no packet id in suback");
         }
 
+#ifdef NOT_YEY_USED
+      // TODO: return response to client
       int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
-      ESP_LOGD(tag, "SubAck ID = %d", id);
 
       for (int i = 2; i < remaining_length; i++)
         {
           uint8_t status = payload_buffer[i];
-          ESP_LOGD(tag, "SubAck ID %d : %d", i, status);
         }
+#endif
     }
   catch (std::system_error &e)
     {
@@ -654,8 +652,9 @@ MqttClient::handle_unsubscribe_ack()
           throw std::system_error(MqttErrc::ProtocolError, "no packet id in suback");
         }
 
+#ifdef NOT_USED
       int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
-      ESP_LOGD(tag, "UnsubAck ID = %d", id);
+#endif
     }
   catch (std::system_error &e)
     {
@@ -670,7 +669,6 @@ MqttClient::handle_ping_response()
 {
   std::error_code ec;
   pending_ping_count--;
-  ESP_LOGD(tag, "handle_ping_response %d (limit %d)", pending_ping_count, pending_ping_count_limit);
   return ec;
 }
 
