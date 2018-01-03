@@ -65,6 +65,10 @@ namespace os
     void subscribe(std::string topic);
     void unsubscribe(std::string topic);
 
+    void add_filter(std::string filter, subscribe_callback_t callback);
+    void add_filter(std::string filter, subscribe_slot_t slot);
+    void remove_filter(std::string filter);
+
     os::Property<bool> &connected();
 
   private:
@@ -94,6 +98,7 @@ namespace os
 
     void handle_error(std::string what, std::error_code ec);
     std::error_code verify(std::string what, std::size_t actual_size, std::size_t expect_size, std::error_code ec = std::error_code());
+    bool match_topic(std::string topic, std::string filter);
 
   private:
     std::shared_ptr<MainLoop> loop;
@@ -119,6 +124,7 @@ namespace os
     subscribe_slot_t subscribe_slot;
     os::Property<bool> connected_property { false };
     int pending_ping_count = 0;
+    std::map<std::string, subscribe_slot_t> filters;
 
     static constexpr int ping_interval_sec = 15;
     static constexpr int keep_alive_sec = 60;

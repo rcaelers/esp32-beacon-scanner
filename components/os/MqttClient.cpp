@@ -563,7 +563,19 @@ MqttClient::handle_publish()
       std::string payload(payload_buffer.data() + index, remaining_length - index);
 
       ESP_LOGI(tag, "Info: Received %s -> %s", topic.c_str(), payload.c_str());
-      subscribe_slot.call(topic, payload);
+      bool matched = false;
+      for (auto kv : filters)
+        {
+          if (match_topic(topic, kv.first))
+            {
+              kv.second.call(topic, payload);
+              matched = true;
+            }
+        }
+      if (!matched)
+        {
+          subscribe_slot.call(topic, payload);
+        }
     }
   catch (std::system_error &e)
     {
@@ -702,4 +714,73 @@ os::Property<bool> &
 MqttClient::connected()
 {
   return connected_property;
+}
+
+bool
+MqttClient::match_topic(std::string topic, std::string filter)
+{
+  auto topic_it = topic.begin();
+  auto filter_it = filter.begin();
+
+  while (true)
+    {
+      if (filter_it == filter.end())
+        {
+          return topic_it == topic.end();
+        }
+      else if (topic_it == topic.end()) // && filter_it != filter.end()
+        {
+          if (*filter_it == '/')
+            {
+              filter_it++;
+              if ((filter_it != filter.end()) && (*filter_it == '#'))
+                {
+                  return true;
+                }
+            }
+          return false;
+        }
+
+      if (*filter_it == '+')
+        {
+          while (*topic_it != '/'  && topic_it < topic.end())
+            {
+              ++topic_it;
+            }
+          ++filter_it;
+        }
+
+      else if (*filter_it == '#')
+        {
+          return true;
+        }
+
+      else
+        {
+          if (*topic_it != *filter_it)
+            {
+              return false;
+            }
+          ++topic_it;
+          ++filter_it;
+        }
+    }
+}
+
+void
+MqttClient::add_filter(std::string filter, subscribe_callback_t callback)
+{
+  filters[filter] = os::make_slot(loop, callback);
+}
+
+void
+MqttClient::add_filter(std::string filter, subscribe_slot_t slot)
+{
+  filters[filter] = std::move(slot);
+}
+
+void
+MqttClient::remove_filter(std::string filter)
+{
+  filters.erase(filter);
 }

@@ -149,6 +149,7 @@ private:
         ESP_LOGI(tag, "-> MQTT connected");
         ESP_LOGI(tag, "-> Requesting configuration at %s", topic_config.c_str());
         mqtt->subscribe(topic_config);
+        mqtt->add_filter(topic_config, os::make_slot(loop, [this] (std::string topic, std::string payload) { on_provisioning(payload);} ));
         start_beacon_scan();
       }
     else
@@ -162,11 +163,14 @@ private:
   {
     ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
-    if (topic == topic_config)
-      {
-        // TODO:
-        // beacon_scanner.start();
-      }
+  }
+
+  void on_provisioning(std::string payload)
+  {
+    ESP_LOGI(tag, "-> MQTT provisioning-> %s (free %d)", payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
+
+    // TODO:
+    // beacon_scanner.start();
   }
 
   void on_beacon_scanner_scan_result(os::BLEScanner::ScanResult result)
