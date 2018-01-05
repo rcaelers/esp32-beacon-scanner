@@ -235,7 +235,7 @@ MqttClient::send_connect()
         }
 
       auto self = shared_from_this();
-      sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
+      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           ec = verify("send connect", bytes_transferred, pkt->size(), ec);
           if (!ec)
             {
@@ -259,7 +259,7 @@ MqttClient::send_ping()
       pkt->add_fixed_header(os::PacketType::PingReq, 0);
       pkt->add(0);
       auto self = shared_from_this();
-      sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
+      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send ping", bytes_transferred, pkt->size(), ec);
           pending_ping_count++;
 
@@ -299,7 +299,7 @@ MqttClient::send_publish(std::string topic, std::string payload, PublishOptions 
       pkt->append(payload);
 
       auto self = shared_from_this();
-      sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
+      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send publish", bytes_transferred, pkt->size(), ec);
         });
     }
@@ -332,7 +332,7 @@ MqttClient::send_subscribe(std::list<std::string> topics)
         }
 
       auto self = shared_from_this();
-      sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
+      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send subscribe", bytes_transferred, pkt->size(), ec);
         });
     }
@@ -364,7 +364,7 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
         }
 
       auto self = shared_from_this();
-      sock->write_async(pkt->to_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
+      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
           verify("send unsubscribe", bytes_transferred, pkt->size(), ec);
         });
     }
@@ -377,10 +377,8 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
 void
 MqttClient::async_read_control_packet()
 {
-  Buffer buf(&header_buffer, 1);
-
   auto self = shared_from_this();
-  sock->read_async(buf, 1, [this, self, buf] (std::error_code ec, std::size_t bytes_transferred) {
+  sock->read_async(buffer, 1, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
       ec = verify("fixed header", bytes_transferred, 1, ec);
       if (!ec)
         {
@@ -394,7 +392,8 @@ MqttClient::handle_control_packet()
 {
   remaining_length = 0;
   remaining_length_multiplier = 1;
-  fixed_header = header_buffer;
+  fixed_header = *buffer.consume_data();
+  buffer.consume_commit(1);
 
   async_read_remaining_length();
 }
@@ -402,9 +401,8 @@ MqttClient::handle_control_packet()
 void
 MqttClient::async_read_remaining_length()
 {
-  Buffer buf(&header_buffer, 1);
   auto self = shared_from_this();
-  sock->read_async(buf, 1, [this, self, buf] (std::error_code ec, std::size_t bytes_transferred) {
+  sock->read_async(buffer, 1, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
       ec = verify("remaining length", bytes_transferred, 1, ec);
       if (!ec)
         {
@@ -416,10 +414,13 @@ MqttClient::async_read_remaining_length()
 void
 MqttClient::handle_remaining_length()
 {
-  remaining_length += (header_buffer & 0b01111111) * remaining_length_multiplier;
+  uint8_t header = *reinterpret_cast<uint8_t *>(buffer.consume_data());
+  buffer.consume_commit(1);
+
+  remaining_length += (header & 0b01111111) * remaining_length_multiplier;
   remaining_length_multiplier *= 128;
 
-  if (header_buffer & 0b10000000u)
+  if (header & 0b10000000u)
     {
       async_read_remaining_length();
     }
@@ -439,14 +440,13 @@ MqttClient::handle_remaining_length()
 void
 MqttClient::async_read_payload()
 {
-  payload_buffer.resize(remaining_length);
-  Buffer buf(payload_buffer);
   auto self = shared_from_this();
-  sock->read_async(buf, remaining_length, [this, self, buf] (std::error_code ec, std::size_t bytes_transferred) {
+  sock->read_async(buffer, remaining_length, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
       ec = verify("payload", bytes_transferred, remaining_length, ec);
       if (!ec)
         {
           handle_payload();
+          buffer.consume_commit(remaining_length);
         }
     });
 }
@@ -513,6 +513,7 @@ MqttClient::handle_connect_ack()
   std::error_code ec = verify("handle ConnAck", remaining_length, 2, std::error_code());
   if (!ec)
     {
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.consume_data());
       uint8_t connect_return_code = static_cast<std::uint8_t>(payload_buffer[1]);
       if (connect_return_code != 0)
         {
@@ -536,6 +537,7 @@ MqttClient::handle_publish()
 
   try
     {
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
       BitMask<PublishFlags> flags;
 
       flags.set(fixed_header & 0x0f);
@@ -554,10 +556,10 @@ MqttClient::handle_publish()
           throw std::system_error(MqttErrc::ProtocolError, "short packet");
         }
 
-      std::string topic(payload_buffer.data() + index, topic_len);
+      std::string topic(reinterpret_cast<char *>(payload_buffer + index), topic_len);
       index += topic_len;
 
-      std::string payload(payload_buffer.data() + index, remaining_length - index);
+      std::string payload(reinterpret_cast<char *>(payload_buffer + index), remaining_length - index);
 
       ESP_LOGI(tag, "Info: Received %s -> %s", topic.c_str(), payload.c_str());
       bool matched = false;
@@ -624,6 +626,7 @@ MqttClient::handle_subscribe_ack()
 
 #ifdef NOT_YEY_USED
       // TODO: return response to client
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.data());
       int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
 
       for (int i = 2; i < remaining_length; i++)
@@ -653,6 +656,7 @@ MqttClient::handle_unsubscribe_ack()
         }
 
 #ifdef NOT_USED
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.data());
       int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
 #endif
     }

@@ -22,8 +22,9 @@
 #define OS_MQTTPACKET_HPP
 
 #include <string>
+#include <iostream>
 
-#include "os/Buffer.hpp"
+#include "os/StreamBuffer.hpp"
 #include "os/bitmask.hpp"
 
 namespace os
@@ -72,19 +73,19 @@ namespace os
   class MqttPacket
   {
   public:
-    MqttPacket() = default;
+    MqttPacket();
 
     void add(uint8_t value);
     void append(std::string s);
     void add(std::string str);
     void add_length(std::size_t size);
     void add_fixed_header(os::PacketType type, std::uint8_t flags);
-    Buffer to_buffer();
-    uint8_t *data() noexcept;
+    StreamBuffer &get_buffer();
     std::size_t size() const noexcept;
 
   private:
-    std::string data_;
+    os::StreamBuffer buffer;
+    std::ostream stream;
   };
 }
 

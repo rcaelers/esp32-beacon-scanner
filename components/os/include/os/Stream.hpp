@@ -28,7 +28,7 @@
 #include "freertos/semphr.h"
 
 #include "os/Resolver.hpp"
-#include "os/Buffer.hpp"
+#include "os/StreamBuffer.hpp"
 #include "os/Property.hpp"
 #include "os/Slot.hpp"
 
@@ -49,10 +49,10 @@ namespace os
 
     void connect(std::string host, int port, connect_callback_t callback);
     void connect(std::string host, int port, connect_slot_t slot);
-    void write_async(Buffer buf, io_callback_t callback);
-    void write_async(Buffer buf, io_slot_t slot);
-    void read_async(Buffer buf, std::size_t count, io_callback_t callback);
-    void read_async(Buffer buf, std::size_t count, io_slot_t slot);
+    void write_async(StreamBuffer &buf, io_callback_t callback);
+    void write_async(StreamBuffer &buf, io_slot_t slot);
+    void read_async(StreamBuffer &buf, std::size_t count, io_callback_t callback);
+    void read_async(StreamBuffer &buf, std::size_t count, io_slot_t slot);
     void close();
 
     os::Property<bool> &connected();
@@ -70,7 +70,7 @@ namespace os
     void on_resolved(std::string host, struct addrinfo *res, connect_slot_t slot);
     void do_wait_write_async();
     void do_write_async();
-    void do_read_async(Buffer buf, std::size_t count, std::size_t bytes_transferred, io_slot_t slot);
+    void do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, io_slot_t slot);
 
   protected:
     os::Property<bool> connected_property { false };
@@ -83,39 +83,23 @@ namespace os
     class WriteOperation
     {
     public:
-      WriteOperation(Buffer buffer, io_slot_t slot)
-        : buffer_(std::move(buffer)), slot_(std::move(slot))
+      WriteOperation(StreamBuffer &buffer, io_slot_t slot)
+        : buffer_(buffer), slot_(std::move(slot))
       {
       }
 
-      Buffer &buffer()
+      StreamBuffer &buffer()
       {
         return buffer_;
       }
 
-      int bytes_transferred() const
+      void call(std::error_code ec, std::size_t bytes_transferred)
       {
-        return bytes_transferred_;
-      }
-
-      void advance(int bytes)
-      {
-        bytes_transferred_ += bytes;
-      }
-
-      bool done() const
-      {
-        return buffer_.size() >= bytes_transferred_;
-      }
-
-      void call(std::error_code ec)
-      {
-        return slot_.call(ec, bytes_transferred_);
+        return slot_.call(ec, bytes_transferred);
       }
 
     private:
-      Buffer buffer_;
-      int bytes_transferred_ = 0;
+      StreamBuffer &buffer_;
       io_slot_t slot_;
     };
 

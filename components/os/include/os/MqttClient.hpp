@@ -114,8 +114,7 @@ namespace os
     const char *client_cert = nullptr;
     const char *client_key = nullptr;
     const char *ca_cert = nullptr;
-    uint8_t header_buffer = 0;
-    std::string payload_buffer;
+    StreamBuffer buffer;
     std::size_t remaining_length = 0;
     int remaining_length_multiplier = 1;
     uint8_t fixed_header = 0;;

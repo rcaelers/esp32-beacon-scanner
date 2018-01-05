@@ -24,25 +24,30 @@ static const char tag[] = "MQTT";
 
 using namespace os;
 
+MqttPacket::MqttPacket() : stream(&buffer)
+{
+}
+
 void
 MqttPacket::add(uint8_t value)
 {
-  data_.push_back(value);
+  stream << value;
 }
 
 void
 MqttPacket::append(std::string s)
 {
-  data_.append(s);
+  stream << s;
 }
 
 void
 MqttPacket::add(std::string str)
 {
   std::size_t size = str.size();
-  data_.push_back(static_cast<uint8_t>(size >> 8));
-  data_.push_back(static_cast<uint8_t>(size & 0xff));
-  data_.append(str);
+
+  stream << static_cast<uint8_t>(size >> 8);
+  stream << static_cast<uint8_t>(size & 0xff);
+  stream << str;
 }
 
 void
@@ -57,30 +62,25 @@ MqttPacket::add_length(std::size_t size)
         {
           b |= 128;
         }
-      data_.push_back(b);
+      stream << b;
     } while (size > 0);
 }
 
 void
 MqttPacket::add_fixed_header(os::PacketType type, std::uint8_t flags)
 {
-  data_.push_back((static_cast<std::uint8_t>(type) << 4) | (flags & 0x0f));
+  uint8_t header = ((static_cast<std::uint8_t>(type) << 4) | (flags & 0x0f));
+  stream << header;
 }
 
-Buffer
-MqttPacket::to_buffer()
+StreamBuffer &
+MqttPacket::get_buffer()
 {
-  return Buffer(data(), size());
-}
-
-uint8_t *
-MqttPacket::data() noexcept
-{
-  return data_.size() ? reinterpret_cast<uint8_t *>(&data_[0]) : nullptr;
+  return buffer;
 }
 
 std::size_t
 MqttPacket::size() const noexcept
 {
-  return data_.size();
+  return buffer.consume_size();
 }
