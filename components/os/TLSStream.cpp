@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define _GLIBCXX_USE_C99
-
 #include "os/TLSStream.hpp"
 
 #include <string>

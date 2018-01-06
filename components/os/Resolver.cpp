@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define _GLIBCXX_USE_C99
-
 #include <string.h>
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
