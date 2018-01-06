@@ -197,6 +197,18 @@ Stream::read_async(StreamBuffer &buffer, std::size_t count, io_slot_t slot)
 }
 
 void
+Stream::read_until_async(StreamBuffer &buffer, std::string until, io_callback_t callback)
+{
+  read_until_async(buffer, until, os::make_slot(loop, callback));
+}
+
+void
+Stream::read_until_async(StreamBuffer &buffer, std::string until, io_slot_t slot)
+{
+  do_read_until_async(buffer, until, 0, slot);
+}
+
+void
 Stream::do_write_async()
 {
   auto &write_op = write_op_queue.front();
@@ -300,6 +312,80 @@ Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_tr
   slot.call(ec, bytes_transferred);
 }
 
+
+bool
+Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match)
+{
+  char *data = buf.consume_data() + start_pos;
+  char *data_end = buf.consume_data() + buf.consume_size() - match.size();
+
+  for ( ; data <= data_end; data++)
+    {
+      int m = memcmp(data, match.c_str(), match.size());
+      if (m == 0)
+        {
+          return true;
+        }
+    }
+
+  if (buf.consume_size() >= match.size())
+    {
+      start_pos = buf.consume_size() - match.size() + 1;
+    }
+  return false;
+}
+
+void
+Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t bytes_transferred, io_slot_t slot)
+{
+  auto self = shared_from_this();
+  std::error_code ec;
+
+  if (!connected_property.get())
+  {
+    ec = NetworkErrc::ConnectionClosed;
+  }
+
+  std::size_t start_pos = 0;
+  while (!ec && !match_until(buf, start_pos, until))
+    {
+      std::size_t left_to_read = 512; // TODO: 
+      uint8_t *data = reinterpret_cast<uint8_t *>(buf.produce_data(left_to_read));
+      int ret = socket_read(data, left_to_read);
+
+      if (ret > 0)
+        {
+          buf.produce_commit(ret);
+          bytes_transferred += ret;
+        }
+      else if (ret == 0)
+        {
+          ESP_LOGI(tag, "Connection closed");
+          connected_property.set(false);
+          ec = NetworkErrc::ConnectionClosed;
+        }
+      else if (ret == -EAGAIN)
+        {
+          loop->notify_read(sock, [this, self, &buf, bytes_transferred, until, slot](std::error_code ec) {
+              if (!ec)
+                {
+                  do_read_until_async(buf, until, bytes_transferred, slot);
+                }
+              else
+                {
+                  slot.call(ec, bytes_transferred);
+                }
+            });
+          return;
+        }
+      else
+        {
+          ec = NetworkErrc::ReadError;
+        }
+    }
+
+  slot.call(ec, bytes_transferred);
+}
 
 void
 Stream::close()

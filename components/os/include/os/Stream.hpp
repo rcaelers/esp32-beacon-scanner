@@ -53,6 +53,8 @@ namespace os
     void write_async(StreamBuffer &buf, io_slot_t slot);
     void read_async(StreamBuffer &buf, std::size_t count, io_callback_t callback);
     void read_async(StreamBuffer &buf, std::size_t count, io_slot_t slot);
+    void read_until_async(StreamBuffer &buf, std::string until, io_callback_t callback);
+    void read_until_async(StreamBuffer &buf, std::string until, io_slot_t slot);
     void close();
 
     os::Property<bool> &connected();
@@ -71,6 +73,8 @@ namespace os
     void do_wait_write_async();
     void do_write_async();
     void do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, io_slot_t slot);
+    void do_read_until_async(StreamBuffer &buf, std::string until, std::size_t bytes_transferred, io_slot_t slot);
+    bool match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match);
 
   protected:
     os::Property<bool> connected_property { false };
