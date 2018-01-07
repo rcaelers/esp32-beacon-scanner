@@ -21,14 +21,15 @@
 #include <iostream>
 #include <string>
 
-#include "os/Wifi.hpp"
-#include "os/BLEScanner.hpp"
-#include "os/Slot.hpp"
-#include "os/Task.hpp"
-#include "os/MainLoop.hpp"
-#include "os/MqttClient.hpp"
-#include "os/hexdump.hpp"
-#include "os/json.hpp"
+#include "loopp/net/Wifi.hpp"
+#include "loopp/ble/BLEScanner.hpp"
+#include "loopp/core/Slot.hpp"
+#include "loopp/core/Task.hpp"
+#include "loopp/core/MainLoop.hpp"
+#include "loopp/mqtt/MqttClient.hpp"
+#include "loopp/http/HttpClient.hpp"
+#include "loopp/utils/hexdump.hpp"
+#include "loopp/utils/json.hpp"
 
 #include "string.h"
 
@@ -61,10 +62,10 @@ class Main
 {
 public:
   Main():
-    beacon_scanner(os::BLEScanner::instance()),
-    wifi(os::Wifi::instance()),
-    loop(std::make_shared<os::MainLoop>()),
-    mqtt(std::make_shared<os::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT)),
+    beacon_scanner(loopp::ble::BLEScanner::instance()),
+    wifi(loopp::net::Wifi::instance()),
+    loop(std::make_shared<loopp::core::MainLoop>()),
+    mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT)),
     task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
@@ -130,7 +131,7 @@ private:
         mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
         mqtt->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
 #endif
-        mqtt->set_callback(os::make_slot(loop, [this] (std::string topic, std::string payload) { on_mqtt_data(topic, payload);} ));
+        mqtt->set_callback(loopp::core::make_slot(loop, [this] (std::string topic, std::string payload) { on_mqtt_data(topic, payload);} ));
         mqtt->connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
         mqtt->connect();
       }
@@ -147,7 +148,7 @@ private:
         ESP_LOGI(tag, "-> MQTT connected");
         ESP_LOGI(tag, "-> Requesting configuration at %s", topic_config.c_str());
         mqtt->subscribe(topic_config);
-        mqtt->add_filter(topic_config, os::make_slot(loop, [this] (std::string topic, std::string payload) { on_provisioning(payload);} ));
+        mqtt->add_filter(topic_config, loopp::core::make_slot(loop, [this] (std::string topic, std::string payload) { on_provisioning(payload);} ));
         start_beacon_scan();
       }
     else
@@ -171,7 +172,7 @@ private:
     // beacon_scanner.start();
   }
 
-  void on_beacon_scanner_scan_result(os::BLEScanner::ScanResult result)
+  void on_beacon_scanner_scan_result(loopp::ble::BLEScanner::ScanResult result)
   {
     static int led_state = 0;
 
@@ -237,14 +238,14 @@ private:
     loop->run();
   }
 
-  os::BLEScanner &beacon_scanner;
-  os::Wifi &wifi;
-  std::shared_ptr<os::MainLoop> loop;
-  std::shared_ptr<os::MqttClient> mqtt;
-  os::Task task;
-  os::MainLoop::timer_id wifi_timer = 0;
-  os::MainLoop::timer_id scan_timer = 0;
-  std::list<os::BLEScanner::ScanResult> scan_results;
+  loopp::ble::BLEScanner &beacon_scanner;
+  loopp::net::Wifi &wifi;
+  std::shared_ptr<loopp::core::MainLoop> loop;
+  std::shared_ptr<loopp::mqtt::MqttClient> mqtt;
+  loopp::core::Task task;
+  loopp::core::MainLoop::timer_id wifi_timer = 0;
+  loopp::core::MainLoop::timer_id scan_timer = 0;
+  std::list<loopp::ble::BLEScanner::ScanResult> scan_results;
   std::string topic_config;
   std::string topic_scan;
 
