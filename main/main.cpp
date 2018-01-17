@@ -101,6 +101,7 @@ private:
     return out;
   }
 
+  void
   read_body(std::shared_ptr<loopp::http::HttpClient> client)
   {
     client->read_body_async(1024, loopp::core::make_slot(loop, [this, client](std::error_code, loopp::net::StreamBuffer *buffer) {
