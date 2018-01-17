@@ -21,13 +21,13 @@
 #include <iostream>
 #include <string>
 
-#include "loopp/net/Wifi.hpp"
 #include "loopp/ble/BLEScanner.hpp"
+#include "loopp/core/MainLoop.hpp"
 #include "loopp/core/Slot.hpp"
 #include "loopp/core/Task.hpp"
-#include "loopp/core/MainLoop.hpp"
-#include "loopp/mqtt/MqttClient.hpp"
 #include "loopp/http/HttpClient.hpp"
+#include "loopp/mqtt/MqttClient.hpp"
+#include "loopp/net/Wifi.hpp"
 #include "loopp/utils/hexdump.hpp"
 #include "loopp/utils/json.hpp"
 
@@ -37,9 +37,10 @@ extern "C"
 {
 #include "esp_heap_trace.h"
 }
+#include "driver/gpio.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "driver/gpio.h"
+#include "esp_ota_ops.h"
 #include "nvs_flash.h"
 
 #include "user_config.h"
@@ -61,12 +62,11 @@ extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 class Main
 {
 public:
-  Main():
-    beacon_scanner(loopp::ble::BLEScanner::instance()),
-    wifi(loopp::net::Wifi::instance()),
-    loop(std::make_shared<loopp::core::MainLoop>()),
-    mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT)),
-    task("main_task", std::bind(&Main::main_task, this))
+  Main()
+    : beacon_scanner(loopp::ble::BLEScanner::instance()), wifi(loopp::net::Wifi::instance()),
+      loop(std::make_shared<loopp::core::MainLoop>()),
+      mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT)),
+      task("main_task", std::bind(&Main::main_task, this))
   {
     gpio_pad_select_gpio(LED_GPIO);
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
@@ -78,32 +78,62 @@ public:
 
 private:
   // https://stackoverflow.com/questions/180947/base64-decode-snippet-in-c
-  static std::string base64_encode(const std::string &in)
+  static std::string
+  base64_encode(const std::string &in)
   {
     std::string out;
 
-    int val=0, valb=-6;
+    int val = 0, valb = -6;
     for (char c : in)
       {
-        val = (val<<8) + c;
+        val = (val << 8) + c;
         valb += 8;
-        while (valb>=0)
+        while (valb >= 0)
           {
-            out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(val>>valb)&0x3F]);
-            valb-=6;
+            out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(val >> valb) & 0x3F]);
+            valb -= 6;
           }
       }
-    if (valb>-6) out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[((val<<8)>>(valb+8))&0x3F]);
-    while (out.size()%4) out.push_back('=');
+    if (valb > -6)
+      out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[((val << 8) >> (valb + 8)) & 0x3F]);
+    while (out.size() % 4)
+      out.push_back('=');
     return out;
   }
 
-  void on_wifi_system_event(system_event_t event)
+  read_body(std::shared_ptr<loopp::http::HttpClient> client)
+  {
+    client->read_body_async(1024, loopp::core::make_slot(loop, [this, client](std::error_code, loopp::net::StreamBuffer *buffer) {
+          if (buffer->consume_size() > 0)
+          {
+            std::string s(buffer->consume_data(), buffer->consume_size());
+            buffer->consume_commit(buffer->consume_size());
+            ESP_LOGI(tag, "Body: %s", s.c_str());
+            read_body(client);
+          }
+        }));
+  }
+
+  void
+  test_http()
+  {
+    std::shared_ptr<loopp::http::HttpClient> client = std::make_shared<loopp::http::HttpClient>(loop);
+
+    client->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+    client->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+
+    loopp::http::Request request("GET", "https://" MQTT_HOST ":443/");
+    client->execute(request, loopp::core::make_slot(loop, [this, client](std::error_code, loopp::http::Response) { read_body(client); }));
+  }
+
+  void
+  on_wifi_system_event(system_event_t event)
   {
     ESP_LOGI(tag, "-> System event %d", event.event_id);
   }
 
-  void on_wifi_timeout()
+  void
+  on_wifi_timeout()
   {
     ESP_LOGI(tag, "-> Wifi timer");
     wifi_timer = 0;
@@ -115,7 +145,8 @@ private:
       }
   }
 
-  void on_wifi_connected(bool connected)
+  void
+  on_wifi_connected(bool connected)
   {
     if (connected)
       {
@@ -131,9 +162,11 @@ private:
         mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
         mqtt->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
 #endif
-        mqtt->set_callback(loopp::core::make_slot(loop, [this] (std::string topic, std::string payload) { on_mqtt_data(topic, payload);} ));
+        mqtt->set_callback(loopp::core::make_slot(loop, [this](std::string topic, std::string payload) { on_mqtt_data(topic, payload); }));
         mqtt->connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
         mqtt->connect();
+
+        test_http();
       }
     else
       {
@@ -141,14 +174,16 @@ private:
       }
   }
 
-  void on_mqtt_connected(bool connected)
+  void
+  on_mqtt_connected(bool connected)
   {
     if (connected)
       {
         ESP_LOGI(tag, "-> MQTT connected");
         ESP_LOGI(tag, "-> Requesting configuration at %s", topic_config.c_str());
         mqtt->subscribe(topic_config);
-        mqtt->add_filter(topic_config, loopp::core::make_slot(loop, [this] (std::string topic, std::string payload) { on_provisioning(payload);} ));
+        mqtt->add_filter(topic_config,
+                         loopp::core::make_slot(loop, [this](std::string topic, std::string payload) { on_provisioning(payload); }));
         start_beacon_scan();
       }
     else
@@ -158,13 +193,14 @@ private:
       }
   }
 
-  void on_mqtt_data(std::string topic, std::string payload)
+  void
+  on_mqtt_data(std::string topic, std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
-
   }
 
-  void on_provisioning(std::string payload)
+  void
+  on_provisioning(std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT provisioning-> %s (free %d)", payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
@@ -172,7 +208,8 @@ private:
     // beacon_scanner.start();
   }
 
-  void on_beacon_scanner_scan_result(loopp::ble::BLEScanner::ScanResult result)
+  void
+  on_beacon_scanner_scan_result(loopp::ble::BLEScanner::ScanResult result)
   {
     static int led_state = 0;
 
@@ -181,7 +218,8 @@ private:
     scan_results.push_back(result);
   }
 
-  void on_scan_timer()
+  void
+  on_scan_timer()
   {
     json j;
 
@@ -203,13 +241,15 @@ private:
     scan_results.clear();
   }
 
-  void start_beacon_scan()
+  void
+  start_beacon_scan()
   {
     scan_timer = loop->add_periodic_timer(std::chrono::milliseconds(1000), std::bind(&Main::on_scan_timer, this));
     beacon_scanner.start();
   }
 
-  void stop_beacon_scan()
+  void
+  stop_beacon_scan()
   {
     loop->cancel_timer(scan_timer);
     scan_timer = 0;
@@ -217,7 +257,8 @@ private:
     beacon_scanner.stop();
   }
 
-  void main_task()
+  void
+  main_task()
   {
     wifi.set_ssid(WIFI_SSID);
     wifi.set_passphase(WIFI_PASS);
@@ -252,8 +293,6 @@ private:
   const static gpio_num_t LED_GPIO = GPIO_NUM_5;
 };
 
-
-
 extern "C" void
 app_main()
 {
@@ -270,7 +309,7 @@ app_main()
 
   new Main();
 
-  while(1)
+  while (1)
     {
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
