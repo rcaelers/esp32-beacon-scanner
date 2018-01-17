@@ -76,6 +76,8 @@ namespace loopp
       mbedtls_x509_crt ca_crt;
       mbedtls_x509_crt client_crt;
       mbedtls_pk_context client_key;
+      bool have_client_cert = false;
+      bool have_ca_cert = false;
     };
   }
 }
