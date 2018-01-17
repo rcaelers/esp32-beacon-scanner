@@ -20,33 +20,33 @@
 
 #include "loopp/http/HttpClient.hpp"
 
-#include <sstream>
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include "boost_xtensa.hpp"
-#include "boost/lexical_cast.hpp"
 #include "boost/algorithm/string.hpp"
+#include "boost/lexical_cast.hpp"
 
-#include "esp_log.h"
 #include "esp_heap_caps.h"
+#include "esp_log.h"
 
-#include "loopp/net/TCPStream.hpp"
-#include "loopp/net/TLSStream.hpp"
-#include "loopp/net/StreamBuffer.hpp"
-#include "loopp/http/Uri.hpp"
+#include "loopp/http/Headers.hpp"
 #include "loopp/http/Request.hpp"
 #include "loopp/http/Response.hpp"
-#include "loopp/http/Headers.hpp"
+#include "loopp/http/Uri.hpp"
+#include "loopp/net/StreamBuffer.hpp"
+#include "loopp/net/TCPStream.hpp"
+#include "loopp/net/TLSStream.hpp"
 
 static const char tag[] = "HTTP";
 
 using namespace loopp;
 using namespace loopp::http;
 
-HttpClient::HttpClient(std::shared_ptr<loopp::core::MainLoop> loop) :
-  loop(loop)
+HttpClient::HttpClient(std::shared_ptr<loopp::core::MainLoop> loop)
+    : loop(loop)
 {
 }
 
@@ -71,14 +71,17 @@ HttpClient::execute(Request request, request_complete_slot_t slot)
 
   try
     {
-      if (ca_cert != nullptr)
+      if (this->request.scheme() == "https")
         {
           std::shared_ptr<loopp::net::TLSStream> tls_sock = std::make_shared<loopp::net::TLSStream>(loop);
           if (client_cert != nullptr && client_key != nullptr)
             {
               tls_sock->set_client_certificate(client_cert, client_key);
             }
-          tls_sock->set_ca_certificate(ca_cert);
+          if (ca_cert != nullptr)
+            {
+              tls_sock->set_ca_certificate(ca_cert);
+            }
           sock = tls_sock;
         }
       else
@@ -87,16 +90,16 @@ HttpClient::execute(Request request, request_complete_slot_t slot)
         }
 
       auto self = shared_from_this();
-      sock->connect(this->request.uri().host(), this->request.uri().port(), [this, self] (std::error_code ec) {
-          if (!ec)
-            {
-              send_request();
-            }
-          else
-            {
-              handle_error("connect", ec);
-            }
-        });
+      sock->connect(this->request.uri().host(), this->request.uri().port(), [this, self](std::error_code ec) {
+        if (!ec)
+          {
+            send_request();
+          }
+        else
+          {
+            handle_error("connect", ec);
+          }
+      });
     }
   catch (std::system_error &e)
     {
@@ -119,7 +122,7 @@ HttpClient::read_body_async(std::size_t size, body_slot_t slot)
     {
       auto self = shared_from_this();
       sock->read_async(response_buffer, bytes_to_read,
-                       [this, self, slot] (std::error_code ec, std::size_t bytes_transferred) {
+                       [this, self, slot](std::error_code ec, std::size_t bytes_transferred) {
                          if (!ec)
                            {
                              this->body_length_left -= bytes_transferred;
@@ -151,7 +154,6 @@ HttpClient::send_request()
       for (auto header : request.headers())
         {
           stream << header.first << ": " << header.second << "\r\n";
-          ESP_LOGD(tag, "header : %s -> %s ", header.first.c_str(), header.second.c_str());;
         }
       stream << "\r\n";
 
@@ -162,17 +164,17 @@ HttpClient::send_request()
         }
 
       auto self = shared_from_this();
-      sock->write_async(request_buffer, [this, self, chunked] (std::error_code ec, std::size_t bytes_transferred) {
-          if (!ec)
-            {
-              // TODO: support sending chunked body.
-              send_body();
-            }
-          else
-            {
-              handle_error("send header", ec);
-            }
-        });
+      sock->write_async(request_buffer, [this, self, chunked](std::error_code ec, std::size_t bytes_transferred) {
+        if (!ec)
+          {
+            // TODO: support sending chunked body.
+            send_body();
+          }
+        else
+          {
+            handle_error("send header", ec);
+          }
+      });
     }
   catch (std::system_error &e)
     {
@@ -187,8 +189,8 @@ HttpClient::update_request_headers()
 
   headers.emplace("Host", request.uri().host());
 
-  if (!request.headers().has("Transfer-Encoding") ||
-      !boost::ifind_first(request.headers()["Transfer-Encoding"], "chunked"))
+  if (!request.headers().has("Transfer-Encoding")
+      || !boost::ifind_first(request.headers()["Transfer-Encoding"], "chunked"))
     {
       headers.emplace("Content-Length", std::to_string(request.content().size()));
     }
@@ -203,16 +205,16 @@ HttpClient::send_body()
       stream << request.content();
 
       auto self = shared_from_this();
-      sock->write_async(request_buffer, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
-          if (!ec)
-            {
-              read_response();
-            }
-          else
-            {
-              handle_error("send body", ec);
-            }
-        });
+      sock->write_async(request_buffer, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+        if (!ec)
+          {
+            read_response();
+          }
+        else
+          {
+            handle_error("send body", ec);
+          }
+      });
     }
   else
     {
@@ -224,16 +226,16 @@ void
 HttpClient::read_response()
 {
   auto self = shared_from_this();
-  sock->read_until_async(response_buffer, "\r\n\r\n", [this, self] (std::error_code ec, std::size_t bytes_transferred) {
-      if (!ec)
-        {
-          handle_response();
-        }
-      else
-        {
-          handle_error("read response", ec);
-        }
-    });
+  sock->read_until_async(response_buffer, "\r\n\r\n", [this, self](std::error_code ec, std::size_t bytes_transferred) {
+    if (!ec)
+      {
+        handle_response();
+      }
+    else
+      {
+        handle_error("read response", ec);
+      }
+  });
 }
 
 void
@@ -297,7 +299,8 @@ HttpClient::parse_headers(std::istream &response_stream)
               body_length_left = 0;
             }
 
-          ESP_LOGD(tag, "body-size=%d left=%d in-buffer=%d", body_length, body_length_left, response_buffer.consume_size());
+          ESP_LOGD(tag, "body-size=%d left=%d in-buffer=%d", body_length, body_length_left,
+                   response_buffer.consume_size());
         }
     }
 }
