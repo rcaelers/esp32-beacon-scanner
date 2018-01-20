@@ -84,14 +84,18 @@ TLSStream::~TLSStream()
 void
 TLSStream::set_client_certificate(const char *cert, const char *key)
 {
+  assert(cert != nullptr && key != nullptr);
   parse_cert(&client_crt, cert);
   parse_key(&client_key, key);
+  have_client_cert = true;
 }
 
 void
 TLSStream::set_ca_certificate(const char *cert)
 {
+  assert(cert != nullptr);
   parse_cert(&ca_crt, cert);
+  have_ca_cert = true;
 }
 
 void
@@ -178,10 +182,12 @@ TLSStream::socket_on_connected(std::string host, connect_slot_t slot)
       mbedtls_ssl_conf_authmode(&config, have_ca_cert ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL);
       if (have_ca_cert)
         {
+          ESP_LOGD(tag, "Using CA cert");
           mbedtls_ssl_conf_ca_chain(&config, &ca_crt, NULL);
         }
-      if (have_ca_cert)
+      if (have_client_cert)
         {
+          ESP_LOGD(tag, "Using Client cert");
           ret = mbedtls_ssl_conf_own_cert(&config, &client_crt, &client_key);
           throw_if_failure("mbedtls_ssl_conf_own_cert", ret);
         }
