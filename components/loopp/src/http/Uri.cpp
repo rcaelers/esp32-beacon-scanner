@@ -110,6 +110,10 @@ Uri::parse(const std::string &uri)
     {
       port_ = boost::lexical_cast<uint16_t>(portstr);
     }
+  else
+    {
+      port_ = (scheme_ == "https") ? 443: 80;
+    }
 
   path_ = matches["path"];
   query_ = matches["query"];
