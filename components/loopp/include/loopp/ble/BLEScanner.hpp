@@ -21,8 +21,6 @@
 #ifndef LOOPP_BLE_BLE__SCANNER_HPP
 #define LOOPP_BLE_BLE__SCANNER_HPP
 
-#include "sdkconfig.h"
-
 #include <string>
 
 #include "esp_gap_ble_api.h"
