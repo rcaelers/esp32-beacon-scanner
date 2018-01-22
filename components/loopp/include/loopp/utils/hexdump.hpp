@@ -25,8 +25,11 @@
 
 namespace loopp
 {
-  void hexdump(const char *tag, const char *prefix, const uint8_t *data, std::size_t size);
-  void hexdump(const char *tag, const uint8_t *data, std::size_t size);
+  namespace utils
+  {
+    void hexdump(const char *tag, const char *prefix, const uint8_t *data, std::size_t size);
+    void hexdump(const char *tag, const uint8_t *data, std::size_t size);
+  }
 }
 
 #endif // LOOPP_FLAGS_HPP

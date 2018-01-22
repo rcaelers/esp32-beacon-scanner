@@ -28,12 +28,12 @@
 
 namespace loopp
 {
-  namespace core
+  namespace utils
   {
     void
     hexdump(const char *tag, const uint8_t *data, std::size_t size)
     {
-      hexdump(tag, data, size);
+      hexdump(tag, "", data, size);
     }
 
     void
