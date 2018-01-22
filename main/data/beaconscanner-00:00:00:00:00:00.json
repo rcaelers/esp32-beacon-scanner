@@ -1,6 +1,8 @@
 {
-    name = "Scanner 1",
-    whitelist = [
-        '*'
-    ]
+    "name" : "Scanner 1",
+    "firmware" : {
+        "version" : "0.0.1",
+        "force_update" : false,
+        "url" : "https://www/firmware-v0.0.1.bin"
+    }
 }
