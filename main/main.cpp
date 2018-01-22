@@ -25,9 +25,9 @@
 #include "loopp/core/MainLoop.hpp"
 #include "loopp/core/Slot.hpp"
 #include "loopp/core/Task.hpp"
-#include "loopp/http/HttpClient.hpp"
 #include "loopp/mqtt/MqttClient.hpp"
 #include "loopp/net/Wifi.hpp"
+#include "loopp/ota/OTA.hpp"
 #include "loopp/utils/hexdump.hpp"
 #include "loopp/utils/json.hpp"
 
@@ -40,10 +40,12 @@ extern "C"
 #include "driver/gpio.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "esp_ota_ops.h"
 #include "nvs_flash.h"
 
 #include "user_config.h"
+
+// TODO: generate
+static const char current_version[] = "0.0.1";
 
 using json = nlohmann::json;
 
@@ -101,31 +103,6 @@ private:
     return out;
   }
 
-  void
-  read_body(std::shared_ptr<loopp::http::HttpClient> client)
-  {
-    client->read_body_async(1024, loopp::core::make_slot(loop, [this, client](std::error_code, loopp::net::StreamBuffer *buffer) {
-          if (buffer->consume_size() > 0)
-          {
-            std::string s(buffer->consume_data(), buffer->consume_size());
-            buffer->consume_commit(buffer->consume_size());
-            ESP_LOGI(tag, "Body: %s", s.c_str());
-            read_body(client);
-          }
-        }));
-  }
-
-  void
-  test_http()
-  {
-    std::shared_ptr<loopp::http::HttpClient> client = std::make_shared<loopp::http::HttpClient>(loop);
-
-    client->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
-    client->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
-
-    loopp::http::Request request("GET", "https://" MQTT_HOST ":443/");
-    client->execute(request, loopp::core::make_slot(loop, [this, client](std::error_code, loopp::http::Response) { read_body(client); }));
-  }
 
   void
   on_wifi_system_event(system_event_t event)
@@ -166,8 +143,6 @@ private:
         mqtt->set_callback(loopp::core::make_slot(loop, [this](std::string topic, std::string payload) { on_mqtt_data(topic, payload); }));
         mqtt->connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
         mqtt->connect();
-
-        test_http();
       }
     else
       {
@@ -200,13 +175,36 @@ private:
     ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   }
 
-  void
-  on_provisioning(std::string payload)
+  void on_provisioning(std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT provisioning-> %s (free %d)", payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
-    // TODO:
-    // beacon_scanner.start();
+    auto top = json::parse(payload);
+
+    ESP_LOGI(tag, "-> Name: %s", top["name"].get<std::string>().c_str());
+
+    auto firmware = top["firmware"];
+    auto version = firmware["version"].get<std::string>();
+    auto force = firmware["force_update"].get<bool>();
+    auto url = firmware["url"].get<std::string>();
+
+    ESP_LOGI(tag, "-> Version: %s (current %s)", version.c_str(), current_version);
+    ESP_LOGI(tag, "-> Force  : %d", force);
+    ESP_LOGI(tag, "-> URI    : %s", url.c_str());
+
+    if (version != std::string(current_version) || force)
+      {
+        // TODO: close mqtt/beaconscanner before OTA, otherwise the board will run out of memory
+        std::shared_ptr<loopp::ota::OTA> ota = std::make_shared<loopp::ota::OTA>(loop);
+
+        ota->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+        ota->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+
+        ota->upgrade_async(url, loopp::core::make_slot(loop, [this, ota](std::error_code ec) {
+              ESP_LOGI(tag, "-> OTA ready");
+              ota->commit();
+            }));
+      }
   }
 
   void
