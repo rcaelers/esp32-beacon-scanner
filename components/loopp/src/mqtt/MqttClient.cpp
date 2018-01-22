@@ -527,6 +527,9 @@ MqttClient::handle_connect_ack()
           connected_property.set(true);
         }
     }
+
+  // TODO: send subscription list (e.g. after reconnect)
+
   return ec;
 }
 
