@@ -50,8 +50,9 @@ namespace loopp
 
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
+      void execute(Request request, request_complete_callback_t callback);
       void execute(Request request, request_complete_slot_t slot);
-      void read_body_async(std::size_t size, body_callback_t slot);
+      void read_body_async(std::size_t size, body_callback_t callback);
       void read_body_async(std::size_t size, body_slot_t slot);
 
     private:

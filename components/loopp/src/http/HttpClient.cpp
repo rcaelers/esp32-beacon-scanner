@@ -64,6 +64,12 @@ HttpClient::set_ca_certificate(const char *cert)
 }
 
 void
+HttpClient::execute(Request request, request_complete_callback_t callback)
+{
+  execute(request, loopp::core::make_slot(loop, callback));
+}
+
+void
 HttpClient::execute(Request request, request_complete_slot_t slot)
 {
   this->request = std::move(request);
