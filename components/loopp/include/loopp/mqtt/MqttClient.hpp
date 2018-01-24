@@ -53,7 +53,7 @@ namespace loopp
       using subscribe_slot_t = loopp::core::Slot<subscribe_function_t>;
 
       MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string client_id, std::string host, int port);
-      ~MqttClient() = default;
+      ~MqttClient();
 
     public:
       void set_client_certificate(const char *cert, const char *key);
@@ -67,6 +67,7 @@ namespace loopp
       void set_will_retain(bool retain);
 
       void connect();
+      void disconnect();
       void publish(std::string topic, std::string payload, PublishOptions options = PublishOptions::None);
       void subscribe(std::string topic);
       void unsubscribe(std::string topic);

@@ -43,6 +43,8 @@ namespace
         return "internal error";
       case loopp::mqtt::MqttErrc::ProtocolError:
         return "protocol error";
+      case loopp::mqtt::MqttErrc::NotConnected:
+        return "not connected";
       default:
         return "(unrecognized error)";
       }

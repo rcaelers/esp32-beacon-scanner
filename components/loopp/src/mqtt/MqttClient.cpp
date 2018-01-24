@@ -30,6 +30,7 @@
 #include "loopp/mqtt/MqttErrors.hpp"
 #include "loopp/net/TCPStream.hpp"
 #include "loopp/net/TLSStream.hpp"
+#include "loopp/net/NetworkErrors.hpp"
 
 static const char tag[] = "MQTT";
 
@@ -42,6 +43,11 @@ MqttClient::MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string 
   host(std::move(host)),
   port(port)
 {
+}
+
+MqttClient::~MqttClient()
+{
+  ESP_LOGI(tag, "Mqtt closing");
 }
 
 void
@@ -91,10 +97,13 @@ MqttClient::set_will_retain(bool retain)
 void
 MqttClient::connect()
 {
+  if (connected_property.get())
+    {
+      throw std::system_error(MqttErrc::ProtocolError, "already connected to MQTT server");
+    }
+
   try
     {
-      auto self = shared_from_this();
-
       if (ca_cert != nullptr)
         {
           std::shared_ptr<loopp::net::TLSStream> tls_sock = std::make_shared<loopp::net::TLSStream>(loop);
@@ -111,6 +120,8 @@ MqttClient::connect()
         {
           sock = std::make_shared<loopp::net::TCPStream>(loop);
         }
+
+      auto self = shared_from_this();
       sock->connect(host, port, [this, self] (std::error_code ec) {
           if (!ec)
             {
@@ -131,8 +142,35 @@ MqttClient::connect()
 }
 
 void
+MqttClient::disconnect()
+{
+  ESP_LOGI(tag, "Closing socket");
+  if (!connected_property.get())
+    {
+      throw std::system_error(MqttErrc::NotConnected, "not connected to MQTT server");
+    }
+
+  if (ping_timer)
+    {
+      loop->cancel_timer(ping_timer);
+      ping_timer = 0;
+    }
+
+  if (sock)
+    {
+      sock->close();
+      sock.reset();
+    }
+}
+
+void
 MqttClient::publish(std::string topic, std::string payload, PublishOptions options)
 {
+  if (!connected_property.get())
+    {
+      throw std::system_error(MqttErrc::NotConnected, "not connected to MQTT server");
+    }
+
   auto self = shared_from_this();
   loop->post([this, self, topic, payload, options] () {
       send_publish(topic, payload, options);
@@ -713,10 +751,17 @@ MqttClient::handle_error(std::string what, std::error_code ec)
         }
 
       heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
-      sock->close();
-      sock.reset();
-      heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
-      connect();
+      if (sock)
+        {
+          sock->close();
+          sock.reset();
+          heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
+        }
+
+      if (ec != loopp::net::NetworkErrc::Cancelled)
+        {
+          connect();
+        }
     }
 }
 

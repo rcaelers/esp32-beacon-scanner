@@ -33,6 +33,7 @@ namespace loopp
         Timeout = 1,
         InternalError,
         ProtocolError,
+        NotConnected
       };
 
     std::error_code make_error_code(MqttErrc);
