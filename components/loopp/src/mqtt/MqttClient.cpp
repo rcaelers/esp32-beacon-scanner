@@ -142,23 +142,33 @@ MqttClient::publish(std::string topic, std::string payload, PublishOptions optio
 void
 MqttClient::subscribe(std::string topic)
 {
-  auto self = shared_from_this();
-  loop->post([this, self, topic] () {
-      std::list<std::string> topics;
-      topics.push_back(topic);
-      send_subscribe(topics);
-    });
+  subscriptions.push_back(topic);
+
+  if (connected_property.get())
+    {
+      auto self = shared_from_this();
+      loop->post([this, self, topic] () {
+          std::list<std::string> topics;
+          topics.push_back(topic);
+          send_subscribe(topics);
+        });
+    }
 }
 
 void
 MqttClient::unsubscribe(std::string topic)
 {
-  auto self = shared_from_this();
-  loop->post([this, self, topic] () {
-      std::list<std::string> topics;
-      topics.push_back(topic);
-      send_unsubscribe(topics);
-    });
+  subscriptions.remove(topic);
+
+  if (connected_property.get())
+    {
+      auto self = shared_from_this();
+      loop->post([this, self, topic] () {
+          std::list<std::string> topics;
+          topics.push_back(topic);
+          send_unsubscribe(topics);
+        });
+    }
 }
 
 void
@@ -524,11 +534,18 @@ MqttClient::handle_connect_ack()
         {
           ESP_LOGI(tag, "Info: Connect OK");
           ping_timer = loop->add_periodic_timer(std::chrono::milliseconds(ping_interval_sec * 1000), std::bind(&MqttClient::send_ping, this));
-          connected_property.set(true);
+
+          if (subscriptions.size() > 0)
+            {
+              ESP_LOGI(tag, "Info: Connect OK - Sending subscriptions");
+              send_subscribe(subscriptions);
+            }
+          else
+            {
+              connected_property.set(true);
+            }
         }
     }
-
-  // TODO: send subscription list (e.g. after reconnect)
 
   return ec;
 }
@@ -637,6 +654,8 @@ MqttClient::handle_subscribe_ack()
           uint8_t status = payload_buffer[i];
         }
 #endif
+
+      connected_property.set(true);
     }
   catch (std::system_error &e)
     {

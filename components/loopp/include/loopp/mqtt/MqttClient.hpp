@@ -129,6 +129,7 @@ namespace loopp
       subscribe_slot_t subscribe_slot;
       loopp::core::Property<bool> connected_property { false };
       int pending_ping_count = 0;
+      std::list<std::string> subscriptions;
       std::map<std::string, subscribe_slot_t> filters;
 
       static constexpr int ping_interval_sec = 15;
