@@ -684,7 +684,7 @@ MqttClient::handle_subscribe_ack()
 
 #ifdef NOT_YEY_USED
       // TODO: return response to client
-      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.data());
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.consume_data());
       int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
 
       for (int i = 2; i < remaining_length; i++)
