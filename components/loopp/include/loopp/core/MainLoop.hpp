@@ -68,6 +68,7 @@ namespace loopp
       void unnotify_read(int fd);
       void unnotify_write(int fd);
       void unnotify(int fd);
+      void cancel(int fd);
 
       void run();
       void terminate();
@@ -82,6 +83,7 @@ namespace loopp
       {
         int fd;
         IoType type;
+        bool cancelled;
         std::chrono::milliseconds timeout_duration;
         std::chrono::system_clock::time_point start_time;
         io_callback callback;
@@ -100,6 +102,7 @@ namespace loopp
       poll_list_type::iterator find(int fd, IoType type);
       void notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds timeout_duration);
       void unnotify(int fd, IoType type);
+      void cancel(int fd, IoType type);
       std::chrono::milliseconds get_first_expiring_timer_duration();
       timer_list_type::iterator get_first_expiring_timer();
       int do_select(poll_list_type &poll_list_copy);
@@ -116,6 +119,7 @@ namespace loopp
       fd_set write_set;
       mutable loopp::core::Mutex poll_list_mutex;
       poll_list_type poll_list;
+      mutable loopp::core::Mutex queue_mutex;
       loopp::core::Queue<std::shared_ptr<loopp::core::ClosureBase>> queue;
       loopp::core::Trigger trigger;
       bool terminate_loop = false;

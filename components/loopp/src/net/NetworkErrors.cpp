@@ -39,6 +39,8 @@ namespace
       {
       case loopp::net::NetworkErrc::Timeout:
         return "network timeout";
+      case loopp::net::NetworkErrc::Cancelled:
+        return "operation cancelled";
       case loopp::net::NetworkErrc::InternalError:
         return "internal error";
       case loopp::net::NetworkErrc::NameResolutionFailed:

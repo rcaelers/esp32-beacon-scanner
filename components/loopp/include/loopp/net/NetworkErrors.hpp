@@ -31,6 +31,7 @@ namespace loopp
       {
         // no 0
         Timeout = 1,
+        Cancelled, 
         InternalError,
         NameResolutionFailed,
         InvalidAddress,

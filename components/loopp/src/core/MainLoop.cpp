@@ -53,6 +53,7 @@ MainLoop::post(std::function<void()> func)
 void
 MainLoop::post(std::shared_ptr<ClosureBase> closure)
 {
+  ScopedLock l(queue_mutex);
   queue.push(closure);
   trigger.signal();
 }
@@ -108,6 +109,13 @@ MainLoop::unnotify(int fd)
   unnotify(fd, IoType::Write);
 }
 
+void
+MainLoop::cancel(int fd)
+{
+  cancel(fd, IoType::Read);
+  cancel(fd, IoType::Write);
+}
+
 MainLoop::poll_list_type::iterator
 MainLoop::find(int fd, IoType type)
 {
@@ -135,6 +143,7 @@ MainLoop::notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds 
       PollData pd;
       pd.fd = fd;
       pd.type = type;
+      pd.cancelled = false;
       pd.callback = cb;
       pd.start_time = std::chrono::system_clock::now();
       pd.timeout_duration = timeout_duration;
@@ -152,8 +161,21 @@ MainLoop::unnotify(int fd, IoType type)
   if (iter != poll_list.end())
     {
       poll_list.erase(iter);
+      trigger.signal();
     }
-  trigger.signal();
+}
+
+void
+MainLoop::cancel(int fd, IoType type)
+{
+  ScopedLock l(poll_list_mutex);
+  auto iter = find(fd, type);
+
+  if (iter != poll_list.end())
+    {
+      iter->cancelled = true;
+      trigger.signal();
+    }
 }
 
 
@@ -258,14 +280,17 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
           timeout = std::max(std::chrono::milliseconds(0), std::min(timeout, t));
         }
 
-      switch (pd.type)
+      if (!pd.cancelled)
         {
-        case IoType::Read:
-          FD_SET(pd.fd, &read_set);
-          break;
-        case IoType::Write:
-          FD_SET(pd.fd, &write_set);
-          break;
+          switch (pd.type)
+            {
+            case IoType::Read:
+              FD_SET(pd.fd, &read_set);
+              break;
+            case IoType::Write:
+              FD_SET(pd.fd, &write_set);
+              break;
+            }
         }
     }
 
@@ -330,13 +355,13 @@ MainLoop::run()
         }
       else if (r > 0)
         {
-          handle_io(poll_list_copy);
-          handle_timers();
-
           if (FD_ISSET(trigger.get_poll_fd(), &read_set))
             {
               handle_queue();
             }
+
+          handle_io(poll_list_copy);
+          handle_timers();
         }
     }
 }
@@ -380,11 +405,16 @@ MainLoop::handle_io(poll_list_type &poll_list_copy)
   for (auto &pd : poll_list_copy)
     {
       if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
-           (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)))
+           (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)) ||
+           pd.cancelled)
         {
           unnotify(pd.fd, pd.type);
           try
             {
+              if (pd.cancelled)
+                {
+                  ec = loopp::net::NetworkErrc::Cancelled;
+                }
               pd.callback(ec);
             }
           catch (const std::system_error &ex)
@@ -436,7 +466,13 @@ MainLoop::handle_timers()
 void
 MainLoop::handle_queue()
 {
-  int size = trigger.confirm();
+  int size = 0;
+
+  {
+    ScopedLock l(queue_mutex);
+    size = queue.size();
+    trigger.confirm();
+  }
 
   for (int i = 0; i < size; i++)
   {
