@@ -194,7 +194,9 @@ private:
 
     if (version != std::string(current_version) || force)
       {
-        // TODO: close mqtt/beaconscanner before OTA, otherwise the board will run out of memory
+        mqtt->disconnect();
+        // TODO: memory may be freed asynchronously, so this may still fail...
+
         std::shared_ptr<loopp::ota::OTA> ota = std::make_shared<loopp::ota::OTA>(loop);
 
         ota->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
@@ -222,7 +224,7 @@ private:
   {
     json j;
 
-    if (mqtt->connected().get())
+    if (mqtt && mqtt->connected().get())
       {
         for (auto r : scan_results)
           {
