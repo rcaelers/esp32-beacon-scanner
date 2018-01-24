@@ -79,6 +79,7 @@ TLSStream::~TLSStream()
   mbedtls_ssl_config_free(&config);
   mbedtls_ctr_drbg_free(&ctr_drbg);
   mbedtls_entropy_free(&entropy);
+  mbedtls_ssl_free(&ssl);
 }
 
 void
@@ -159,6 +160,7 @@ TLSStream::socket_close()
       ret = mbedtls_ssl_close_notify(&ssl);
     }
   while (ret == MBEDTLS_ERR_SSL_WANT_WRITE);
+  ::close(get_socket());
 }
 
 void
