@@ -389,9 +389,17 @@ Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t by
 void
 Stream::close()
 {
-  socket_close();
-  loop->unnotify(sock);
-  connected_property.set(false);
+  if (connected_property.get())
+    {
+      connected_property.set(false);
+
+      auto self = shared_from_this();
+      loop->post([this, self] () {
+          socket_close();
+          loop->cancel(sock);
+          sock = -1;
+        });
+    }
 }
 
 loopp::core::Property<bool> &
