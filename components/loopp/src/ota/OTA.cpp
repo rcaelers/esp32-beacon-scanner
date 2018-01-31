@@ -79,6 +79,8 @@ OTA::upgrade_async(std::string url, ota_result_slot_t slot)
 {
   try
     {
+      this->slot = slot;
+
       update_partition = esp_ota_get_next_update_partition(NULL);
       ESP_LOGI(tag,
                "Writing to partition, type %d subtype %d at offset 0x%x",
