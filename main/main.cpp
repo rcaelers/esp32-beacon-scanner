@@ -33,10 +33,6 @@
 
 #include "string.h"
 
-extern "C"
-{
-#include "esp_heap_trace.h"
-}
 #include "driver/gpio.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -57,8 +53,6 @@ extern const uint8_t certificate_end[] asm("_binary_esp32_crt_end");
 extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
 extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 
-// #define NUM_RECORDS 100
-// static heap_trace_record_t trace_record[NUM_RECORDS]; // This buffer must be in internal RAM
 
 class Main
 {
@@ -273,8 +267,6 @@ private:
     wifi.connect();
 
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
-    // heap_trace_init_standalone(trace_record, NUM_RECORDS);
-    // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_ALL) );
 
     loop->run();
   }
