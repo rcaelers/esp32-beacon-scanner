@@ -44,8 +44,7 @@ extern "C"
 
 #include "user_config.h"
 
-// TODO: generate
-static const char current_version[] = "0.0.1";
+static const char current_version[] = VERSION;
 
 using json = nlohmann::json;
 
@@ -305,6 +304,7 @@ app_main()
     }
   ESP_ERROR_CHECK(ret);
 
+  ESP_LOGI(tag, "Version: %s", current_version);
   ESP_LOGI(tag, "HEAP: startup");
   heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
