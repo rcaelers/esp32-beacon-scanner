@@ -58,10 +58,11 @@ class Main
 {
 public:
   Main()
-    : beacon_scanner(loopp::ble::BLEScanner::instance()), wifi(loopp::net::Wifi::instance()),
-      loop(std::make_shared<loopp::core::MainLoop>()),
-      mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT)),
-      task("main_task", std::bind(&Main::main_task, this))
+    : beacon_scanner(loopp::ble::BLEScanner::instance())
+    , wifi(loopp::net::Wifi::instance())
+    , loop(std::make_shared<loopp::core::MainLoop>())
+    , mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT))
+    , task(std::make_shared<loopp::core::Task>("main_task", std::bind(&Main::main_task, this)))
   {
     gpio_pad_select_gpio(LED_GPIO);
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
@@ -95,7 +96,6 @@ private:
       out.push_back('=');
     return out;
   }
-
 
   void
   on_wifi_system_event(system_event_t event)
@@ -168,7 +168,8 @@ private:
     ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   }
 
-  void on_provisioning(std::string payload)
+  void
+  on_provisioning(std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT provisioning-> %s (free %d)", payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
 
@@ -275,7 +276,7 @@ private:
   loopp::net::Wifi &wifi;
   std::shared_ptr<loopp::core::MainLoop> loop;
   std::shared_ptr<loopp::mqtt::MqttClient> mqtt;
-  loopp::core::Task task;
+  std::shared_ptr<loopp::core::Task> task;
   loopp::core::MainLoop::timer_id wifi_timer = 0;
   loopp::core::MainLoop::timer_id scan_timer = 0;
   std::list<loopp::ble::BLEScanner::ScanResult> scan_results;
