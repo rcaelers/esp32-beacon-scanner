@@ -55,6 +55,9 @@ namespace loopp
       void read_body_async(std::size_t size, body_callback_t callback);
       void read_body_async(std::size_t size, body_slot_t slot);
 
+      std::size_t get_body_length() const { return body_length; }
+      std::size_t get_body_length_left() const { return body_length_left; }
+
     private:
       void send_request();
       void update_request_headers();
