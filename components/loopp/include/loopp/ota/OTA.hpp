@@ -48,8 +48,8 @@ namespace loopp
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
 
-      void upgrade_async(std::string url, ota_result_callback_t callback);
-      void upgrade_async(std::string url, ota_result_slot_t slot);
+      void upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_callback_t callback);
+      void upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_slot_t slot);
       void commit();
 
     private:
@@ -65,6 +65,7 @@ namespace loopp
 
       esp_ota_handle_t update_handle = 0;
       const esp_partition_t *update_partition = NULL;
+      loopp::core::MainLoop::timer_id timeout_timer = 0;
     };
   }
 }

@@ -69,17 +69,22 @@ OTA::check()
 }
 
 void
-OTA::upgrade_async(std::string url, ota_result_callback_t callback)
+OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_callback_t callback)
 {
-  upgrade_async(url, loopp::core::make_slot(loop, callback));
+  upgrade_async(url, timeout_duration, loopp::core::make_slot(loop, callback));
 }
 
 void
-OTA::upgrade_async(std::string url, ota_result_slot_t slot)
+OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_slot_t slot)
 {
   try
     {
       this->slot = slot;
+
+      if (timeout_duration != std::chrono::seconds(0))
+        {
+          timeout_timer = loop->add_timer(std::chrono::seconds(timeout_duration), []() { esp_restart(); });
+        }
 
       update_partition = esp_ota_get_next_update_partition(NULL);
       ESP_LOGI(tag,
@@ -169,6 +174,11 @@ OTA::retrieve_body()
 void
 OTA::commit()
 {
+  if (timeout_timer != 0)
+    {
+      loop->cancel_timer(timeout_timer);
+    }
+
   esp_err_t err = esp_ota_set_boot_partition(update_partition);
   if (err != ESP_OK)
     {
