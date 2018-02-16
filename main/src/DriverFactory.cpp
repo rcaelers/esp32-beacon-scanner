@@ -26,6 +26,7 @@
 
 #include "DriverFactory.hpp"
 #include "BLEScannerDriver.hpp"
+#include "GPIODriver.hpp"
 
 using json = nlohmann::json;
 
@@ -47,6 +48,10 @@ DriverFactory::create(nlohmann::json config, std::string topic_root)
       if (driver_id == "ble-scanner")
         {
           driver = std::make_shared<BLEScannerDriver>(config, topic_root, loop, mqtt);
+        }
+      else if (driver_id == "gpio")
+        {
+          driver = std::make_shared<GPIODriver>(config, topic_root, loop, mqtt);
         }
     }
   catch (json::out_of_range &e)

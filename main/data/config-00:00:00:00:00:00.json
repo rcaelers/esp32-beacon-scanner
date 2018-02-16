@@ -9,6 +9,29 @@
         {
             "name" : "BLE Scanner",
             "driver" : "ble-scanner"
+        },
+        {
+            "name" : "LED",
+            "driver" : "gpio",
+            "pins" : [
+                {
+                    "path" : "led",
+                    "direction" : "out",
+                    "initial": false,
+                    "invert": true,
+                    "pin" : 5
+                },
+                {
+                    "path" : "button",
+                    "direction" : "in",
+                    "mode": "rising",
+                    "pull-down" : false,
+                    "pull-up" : true,
+                    "retain": false,
+                    "pin" : 12,
+                    "debounce": 100
+                }
+            ]
         }
     ]
 }
