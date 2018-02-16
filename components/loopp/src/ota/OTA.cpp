@@ -122,13 +122,13 @@ OTA::on_http_response(std::error_code ec, loopp::http::Response response)
         }
       else
         {
-          ESP_LOGD(tag, "Retrieving firmware");
+          ESP_LOGI(tag, "Retrieving firmware");
           retrieve_body();
         }
     }
   else
     {
-      ESP_LOGD(tag, "Failed to request firmware");
+      ESP_LOGE(tag, "Failed to request firmware");
       this->slot.call(ec);
     }
 }
@@ -155,6 +155,12 @@ OTA::retrieve_body()
                                       }
 
                                     buffer->consume_commit(buffer->consume_size());
+
+                                    std::size_t total = client->get_body_length();
+                                    std::size_t left = client->get_body_length_left();
+                                    int done = ( 100 * (total - left)) / total;
+                                    ESP_LOGI(tag, "Progress: %d%%", done);
+
                                     retrieve_body();
                                   }
                                 else
@@ -165,7 +171,7 @@ OTA::retrieve_body()
                               }
                             catch (const std::system_error &ex)
                               {
-                                ESP_LOGD(tag, "upgrade_async exception %d %s", ex.code().value(), ex.what());
+                                ESP_LOGE(tag, "upgrade_async exception %d %s", ex.code().value(), ex.what());
                                 slot.call(ex.code());
                               }
                           }));
