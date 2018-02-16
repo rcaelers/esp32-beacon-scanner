@@ -14,4 +14,8 @@
 
 #define MQTT_USE_TLS 1
 
+#define MQTT_TOPIC_PREFIX "beaconscanner"
+
+#define ENABLE_DEFAULT_BLE_SCANNER 1
+
 #endif

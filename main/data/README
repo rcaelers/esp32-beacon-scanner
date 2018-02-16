@@ -1,3 +1,3 @@
 * Publish configuration of scanner
 
-mosquitto_pub --cafile CA.crt --cert <user>.crt --key <user>.key -h <mqtthost> -p 8883 -t 'beaconscanner/config/<mac>' -r -f beaconscanner-<mac>.json
+mosquitto_pub --cafile CA.crt --cert <user>.crt --key <user>.key -h <mqtthost> -p 8883 -t '<MQTT_PREFIX>/<mac>/configuration' -r -f config-<mac>.json

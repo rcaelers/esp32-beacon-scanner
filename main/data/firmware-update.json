@@ -1,0 +1,6 @@
+{
+    "cmd" : "firmware-upgrade",
+    "url" : "https://rock64.home.krandor.org/firmware/beacon-scanner.bin",
+    "timeout" : 120
+
+}
