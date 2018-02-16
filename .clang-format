@@ -1,0 +1,39 @@
+BasedOnStyle: GNU
+
+---
+Language: Cpp
+Standard: Cpp11
+
+BasedOnStyle: Mozilla
+ColumnLimit: 140
+TabWidth: 2
+UseTab: Never
+ReflowComments: false
+BreakStringLiterals: false
+
+BreakBeforeBraces: GNU
+SortIncludes: false
+PointerAlignment: Right
+
+BreakConstructorInitializers: BeforeComma
+BreakConstructorInitializersBeforeComma: false
+ConstructorInitializerIndentWidth: 2
+
+AlwaysBreakAfterReturnType: AllDefinitions
+AlignAfterOpenBracket: Align
+
+BinPackArguments: false
+BinPackParameters: false
+
+CompactNamespaces: false
+FixNamespaceComments: true
+NamespaceIndentation: All
+
+#
+PenaltyBreakAssignment: 500
+PenaltyBreakBeforeFirstCallParameter: 1000
+PenaltyBreakComment: 500
+PenaltyBreakFirstLessLess: 200
+PenaltyBreakString: 100
+PenaltyExcessCharacter: 2
+#PenaltyReturnTypeOnItsOwnLine: 0
