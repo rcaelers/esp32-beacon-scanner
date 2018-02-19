@@ -25,6 +25,7 @@
 #include "loopp/core/MainLoop.hpp"
 #include "loopp/core/Slot.hpp"
 #include "loopp/core/Task.hpp"
+#include "loopp/drivers/DriverRegistry.hpp"
 #include "loopp/mqtt/MqttClient.hpp"
 #include "loopp/net/Wifi.hpp"
 #include "loopp/ota/OTA.hpp"
@@ -39,7 +40,12 @@
 
 #include "user_config.h"
 
-#include "DriverFactory.hpp"
+// TODO: driver should be registered by the driver itself.
+// However, the linker will eliminate unreferenced symbols from static libraries.
+#include "loopp/drivers/BLEScannerDriver.hpp"
+#include "loopp/drivers/GPIODriver.hpp"
+LOOPP_REGISTER_DRIVER("ble-scanner", loopp::drivers::BLEScannerDriver);
+LOOPP_REGISTER_DRIVER("gpio", loopp::drivers::GPIODriver);
 
 static const char current_version[] = VERSION;
 
@@ -80,7 +86,6 @@ public:
     , wifi(loopp::net::Wifi::instance())
     , loop(std::make_shared<loopp::core::MainLoop>())
     , mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT))
-    , driver_factory(std::make_shared<DriverFactory>(loop, mqtt))
     , task(std::make_shared<loopp::core::Task>("main_task", std::bind(&Main::main_task, this)))
   {
 
@@ -154,9 +159,12 @@ private:
 
 #ifdef ENABLE_DEFAULT_BLE_SCANNER
         std::string name = "ble-scanner";
-        std::shared_ptr<IDriver> driver = driver_factory->create(name, topic_root);
+        loopp::drivers::DriverContext context(loop, mqtt, topic_root);
+        json config;
+        std::shared_ptr<loopp::drivers::IDriver> driver = loopp::drivers::DriverRegistry::instance().create(name, context, config);
         if (driver)
           {
+            ESP_LOGI(tag, "Adding default BLE scanner");
             drivers[name] = driver;
             driver->start();
           }
@@ -210,7 +218,7 @@ private:
   {
     ESP_LOGI(tag, "-> MQTT provisioning: %s", payload.c_str());
 
-    // TODO: Allow re-configuration.
+    // TODO: Allow re-configuration. Not all driver can be properly stopped/restarted.
 
     auto top = json::parse(payload);
 
@@ -232,13 +240,15 @@ private:
           }
         drivers.clear();
 
-        for (auto device : top.at("devices"))
+        for (auto device_config : top.at("devices"))
           {
-            std::string name = device["name"].get<std::string>();
+            std::string name = device_config["name"].get<std::string>();
+            std::string driver_name = device_config["driver"].get<std::string>();
             ESP_LOGI(tag, "-> Name  : %s", name.c_str());
-            ESP_LOGI(tag, "-> Driver: %s", device["driver"].get<std::string>().c_str());
+            ESP_LOGI(tag, "-> Driver: %s", driver_name.c_str());
 
-            std::shared_ptr<IDriver> driver = driver_factory->create(device, topic_root);
+            loopp::drivers::DriverContext context(loop, mqtt, topic_root);
+            std::shared_ptr<loopp::drivers::IDriver> driver = loopp::drivers::DriverRegistry::instance().create(driver_name, context, device_config);
             if (driver)
               {
                 drivers[name] = driver;
@@ -246,7 +256,7 @@ private:
               }
             else
               {
-                ESP_LOGE(tag, "No driver for %s", device["driver"].get<std::string>().c_str());
+                ESP_LOGE(tag, "No driver for %s", device_config["driver"].get<std::string>().c_str());
               }
           }
       }
@@ -340,9 +350,8 @@ private:
   loopp::net::Wifi &wifi;
   std::shared_ptr<loopp::core::MainLoop> loop;
   std::shared_ptr<loopp::mqtt::MqttClient> mqtt;
-  std::shared_ptr<DriverFactory> driver_factory;
   std::shared_ptr<loopp::core::Task> task;
-  std::map<std::string, std::shared_ptr<IDriver>> drivers;
+  std::map<std::string, std::shared_ptr<loopp::drivers::IDriver>> drivers;
   loopp::core::MainLoop::timer_id wifi_timeout_timer = 0;
   std::string topic_root;
   std::string topic_command;

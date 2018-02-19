@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "GPIODriver.hpp"
+#include "loopp/drivers/GPIODriver.hpp"
 
 #include <string>
 #include <algorithm>
@@ -28,17 +28,17 @@
 
 #include "loopp/core/ScopedLock.hpp"
 
+using namespace loopp::drivers;
+using namespace loopp::drivers::details;
+
 using json = nlohmann::json;
 
 static const char tag[] = "GPIO";
 
-GPIODriver::GPIODriver(nlohmann::json config,
-                       std::string topic_root,
-                       std::shared_ptr<loopp::core::MainLoop> loop,
-                       std::shared_ptr<loopp::mqtt::MqttClient> mqtt)
-  : loop(loop)
-  , mqtt(mqtt)
-  , queue(std::make_shared<loopp::core::QueueISR<gpio_num_t>>())
+// LOOPP_REGISTER_DRIVER("gpio", GPIODriver);
+
+GPIODriver::GPIODriver(loopp::drivers::DriverContext context, nlohmann::json config)
+  : queue(std::make_shared<loopp::core::QueueISR<gpio_num_t>>())
   , task(std::make_shared<loopp::core::Task>("gpio_task", std::bind(&GPIODriver::gpio_task, this), loopp::core::Task::CoreId::NoAffinity, 2048))
 {
   auto it = config.find("pins");
@@ -46,7 +46,7 @@ GPIODriver::GPIODriver(nlohmann::json config,
     {
       for (auto pin_config : config.at("pins"))
         {
-          std::shared_ptr<GPIOPin> pin = std::make_shared<GPIOPin>(loop, mqtt, queue, pin_config, topic_root);
+          std::shared_ptr<GPIOPin> pin = std::make_shared<GPIOPin>(context, queue, pin_config);
           gpios[pin->get_pin_no()] = pin;
         }
     }
@@ -96,13 +96,9 @@ GPIODriver::gpio_task()
     }
 }
 
-GPIOPin::GPIOPin(std::shared_ptr<loopp::core::MainLoop> loop,
-                 std::shared_ptr<loopp::mqtt::MqttClient> mqtt,
-                 std::shared_ptr<loopp::core::QueueISR<gpio_num_t>> queue,
-                 nlohmann::json config,
-                 std::string root_topic)
-  : loop(loop)
-  , mqtt(mqtt)
+GPIOPin::GPIOPin(loopp::drivers::DriverContext context, std::shared_ptr<loopp::core::QueueISR<gpio_num_t>> queue, nlohmann::json config)
+  : loop(context.get_loop())
+  , mqtt(context.get_mqtt())
   , queue(queue)
 {
   pin.pin_bit_mask = 0;
@@ -112,7 +108,7 @@ GPIOPin::GPIOPin(std::shared_ptr<loopp::core::MainLoop> loop,
   pin.intr_type = GPIO_INTR_ANYEDGE;
 
   std::string path = config["path"].get<std::string>();
-  topic = root_topic + path;
+  topic = context.get_topic_root() + path;
 
   pin_no = static_cast<gpio_num_t>(config["pin"].get<int>());
   pin.pin_bit_mask = (1ULL << pin_no);

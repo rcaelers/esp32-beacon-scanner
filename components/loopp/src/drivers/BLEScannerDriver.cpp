@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "BLEScannerDriver.hpp"
+#include "loopp/drivers/BLEScannerDriver.hpp"
 
 #include <string>
 #include <vector>
@@ -29,23 +29,31 @@
 
 #include "user_config.h"
 
+#include "loopp/drivers/DriverRegistry.hpp"
+
+using namespace loopp::drivers;
+
+// LOOPP_REGISTER_DRIVER("ble-scanner", BLEScannerDriver);
 
 using json = nlohmann::json;
 
 static const char tag[] = "BLE-SCANNER";
 
-BLEScannerDriver::BLEScannerDriver(nlohmann::json config, std::string topic_prefix, std::shared_ptr<loopp::core::MainLoop> loop, std::shared_ptr<loopp::mqtt::MqttClient> mqtt)
-  : loop(loop)
-  , mqtt(mqtt)
+BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, nlohmann::json config)
+  : loop(context.get_loop())
+  , mqtt(context.get_mqtt())
   , ble_scanner(loopp::ble::BLEScanner::instance())
 {
   gpio_pad_select_gpio(LED_GPIO);
   gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
 
-  topic_scan = topic_prefix + "/scan";
+  topic_scan = context.get_topic_root() + "/scan";
+  ESP_LOGD(tag, "BLEScannerDriver");
+}
 
-  ble_scanner.scan_result_signal().connect(loop, std::bind(&BLEScannerDriver::on_ble_scanner_scan_result, this, std::placeholders::_1));
-
+BLEScannerDriver::~BLEScannerDriver()
+{
+  ESP_LOGD(tag, "BLEScannerDriver~");
 }
 
 // https://stackoverflow.com/questions/180947/base64-decode-snippet-in-c
@@ -108,7 +116,9 @@ BLEScannerDriver::on_scan_timer()
 void
 BLEScannerDriver::start()
 {
-  scan_timer = loop->add_periodic_timer(std::chrono::milliseconds(1000), std::bind(&BLEScannerDriver::on_scan_timer, this));
+  auto self = shared_from_this();
+  ble_scanner.scan_result_signal().connect(loop, [this, self](loopp::ble::BLEScanner::ScanResult scan_result) { on_ble_scanner_scan_result(scan_result); });
+  scan_timer = loop->add_periodic_timer(std::chrono::milliseconds(1000), [this, self]() { on_scan_timer(); });
   ble_scanner.start();
 }
 
@@ -117,6 +127,5 @@ BLEScannerDriver::stop()
 {
   loop->cancel_timer(scan_timer);
   scan_timer = 0;
-
   ble_scanner.stop();
 }

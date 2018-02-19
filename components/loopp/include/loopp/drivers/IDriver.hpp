@@ -18,46 +18,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#ifndef IDRIVER_HH
+#define IDRIVER_HH
+
 #include <string>
-#include <vector>
-#include <algorithm>
 
-#include "esp_log.h"
+#include "loopp/core/MainLoop.hpp"
+#include "loopp/mqtt/MqttClient.hpp"
+#include "loopp/utils/json.hpp"
 
-#include "DriverFactory.hpp"
-#include "BLEScannerDriver.hpp"
-#include "GPIODriver.hpp"
-
-using json = nlohmann::json;
-
-DriverFactory::DriverFactory(std::shared_ptr<loopp::core::MainLoop> loop, std::shared_ptr<loopp::mqtt::MqttClient> mqtt)
-  : loop(loop)
-  , mqtt(mqtt)
+namespace loopp
 {
-}
-
-std::shared_ptr<IDriver>
-DriverFactory::create(nlohmann::json config, std::string topic_root)
-{
-  std::shared_ptr<IDriver> driver;
-
-  try
+  namespace drivers
+  {
+    class IDriver
     {
-      std::string driver_id = config["driver"].get<std::string>();
+    public:
+      virtual ~IDriver() {}
 
-      if (driver_id == "ble-scanner")
-        {
-          driver = std::make_shared<BLEScannerDriver>(config, topic_root, loop, mqtt);
-        }
-      else if (driver_id == "gpio")
-        {
-          driver = std::make_shared<GPIODriver>(config, topic_root, loop, mqtt);
-        }
-    }
-  catch (json::out_of_range &e)
-    {
-      ESP_LOGI("APP", "-> Invalid driver specification: %s", e.what());
-    }
+      virtual void start() = 0;
+      virtual void stop() = 0;
+    };
+  } // namespace core
+} // namespace loopp
 
-  return driver;
-}
+#endif // IDRIVER_HH
