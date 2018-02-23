@@ -1,3 +1,0 @@
-COMPONENT_ADD_INCLUDEDIRS := ext .
-COMPONENT_SRCDIRS = src
-CXXFLAGS += -Wno-error=switch
