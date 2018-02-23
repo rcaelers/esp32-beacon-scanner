@@ -10,6 +10,7 @@ RUN \
        curl \
        flex \
        git \
+       golang \
        gperf \
        libncurses-dev \
        make \
@@ -26,7 +27,13 @@ RUN curl https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a
 RUN cd /esp32 && \
     git clone --recursive https://github.com/espressif/esp-idf.git
 
-ENV PATH $PATH:/esp32/xtensa-esp32-elf/bin
+RUN mkdir -p /esp32/src/github.com/square && \
+    cd /esp32/src/github.com/square && \
+    git clone https://github.com/square/certstrap && \
+    cd certstrap && \
+    GOPATH=/esp32/ GOARCH=amd64 GOOS=linux go build -o bin/certstrap
+
+ENV PATH $PATH:/esp32/xtensa-esp32-elf/bin:/esp32/src/github.com/square/certstrap/bin
 ENV IDF_PATH /esp32/esp-idf
 
 WORKDIR /esp32/project
