@@ -1,0 +1,34 @@
+FROM ubuntu:17.10
+
+LABEL maintainer "Rob Caelers <rob.caelers@gmail.com>"
+
+RUN \
+  export DEBIAN_FRONTEND=noninteractive && \
+  apt-get update -y && \
+  apt-get install -y \
+       bison \
+       curl \
+       flex \
+       git \
+       gperf \
+       libncurses-dev \
+       make \
+       python \
+       python-serial && \
+  apt-get clean
+
+RUN mkdir /esp32 && \
+    mkdir /esp32/esp-idf && \
+    mkdir /esp32/project
+
+RUN curl https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz | tar xzf - -C /esp32
+
+RUN cd /esp32 && \
+    git clone --recursive https://github.com/espressif/esp-idf.git
+
+ENV PATH $PATH:/esp32/xtensa-esp32-elf/bin
+ENV IDF_PATH /esp32/esp-idf
+
+WORKDIR /esp32/project
+
+CMD ["/bin/bash"]
