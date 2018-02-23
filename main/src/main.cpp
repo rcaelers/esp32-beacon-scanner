@@ -53,12 +53,14 @@ using json = nlohmann::json;
 
 static const char tag[] = "BEACON-SCANNER";
 
+#ifdef MQTT_USE_TLS
 extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
 extern const uint8_t ca_end[] asm("_binary_CA_crt_end");
 extern const uint8_t certificate_start[] asm("_binary_esp32_crt_start");
 extern const uint8_t certificate_end[] asm("_binary_esp32_crt_end");
 extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
 extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
+#endif
 
 void
 memlog(const char *msg)
@@ -309,8 +311,10 @@ private:
     loop->add_timer(std::chrono::milliseconds(1000), [this, url]() {
       std::shared_ptr<loopp::ota::OTA> ota = std::make_shared<loopp::ota::OTA>(loop);
 
+#ifdef MQTT_USE_TLS
       ota->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
       ota->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+#endif
 
       ota->upgrade_async(url, std::chrono::seconds(60), loopp::core::make_slot(loop, [this, ota](std::error_code ec) {
                            ESP_LOGI(tag, "-> OTA ready");
