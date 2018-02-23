@@ -19,5 +19,4 @@ before_install:
   - docker build -t rcaelers/esp32-loopp docker
 
 script:
-  - cp main/user_config.h.example main/user_config.h
-  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp travis-build.sh
+  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh
