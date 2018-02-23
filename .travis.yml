@@ -1,0 +1,22 @@
+sudo: required
+
+dist: trusty
+
+addons:
+  apt:
+    packages:
+      - docker-ce
+
+services:
+  - docker
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+
+before_install:
+  - docker build -t rcaelers/esp32-loopp docker
+
+script:
+  - docker run --rm -v "$TRAVIS_BUILD_DIR:/esp32/project rcaelers/esp32-loopp sh -c make defconfig all
