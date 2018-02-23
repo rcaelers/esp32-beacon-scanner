@@ -25,7 +25,7 @@
 
 #include "Stream.hpp"
 
-#include "loopp/core/Mainloop.hpp"
+#include "loopp/core/MainLoop.hpp"
 
 namespace loopp
 {

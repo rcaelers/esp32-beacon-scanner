@@ -47,7 +47,7 @@ BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, nlohma
   gpio_pad_select_gpio(LED_GPIO);
   gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
 
-  topic_scan = context.get_topic_root() + "/scan";
+  topic_scan = context.get_topic_root() + "scan";
   ESP_LOGD(tag, "BLEScannerDriver");
 }
 
