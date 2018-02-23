@@ -27,8 +27,6 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 
-#include "user_config.h"
-
 #include "loopp/drivers/DriverRegistry.hpp"
 
 using namespace loopp::drivers;
