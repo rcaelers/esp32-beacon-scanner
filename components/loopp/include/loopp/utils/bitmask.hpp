@@ -28,12 +28,12 @@
 
 namespace loopp
 {
-  template <class Enum, class Enabler = void>
+  template<class Enum, class Enabler = void>
   struct enable_bitmask : public std::false_type
   {
   };
 
-  template <class Enum>
+  template<class Enum>
   struct BitMask
   {
   public:
@@ -126,17 +126,17 @@ namespace loopp
 
     friend constexpr BitMask operator&(BitMask lhs, BitMask rhs) noexcept
     {
-      return BitMask{static_cast<impl_type>(lhs.val & rhs.val)};
+      return BitMask{ static_cast<impl_type>(lhs.val & rhs.val) };
     }
 
     friend constexpr BitMask operator|(BitMask lhs, BitMask rhs) noexcept
     {
-      return BitMask{static_cast<impl_type>(lhs.val | rhs.val)};
+      return BitMask{ static_cast<impl_type>(lhs.val | rhs.val) };
     }
 
     friend constexpr BitMask operator^(BitMask lhs, BitMask rhs) noexcept
     {
-      return BitMask{static_cast<impl_type>(lhs.val ^ rhs.val)};
+      return BitMask{ static_cast<impl_type>(lhs.val ^ rhs.val) };
     }
 
     constexpr underlying_type value() const noexcept
@@ -149,41 +149,38 @@ namespace loopp
       val = static_cast<impl_type>(v);
     }
 
-private:
-    constexpr explicit BitMask(impl_type val) noexcept : val(val)
+  private:
+    constexpr explicit BitMask(impl_type val) noexcept
+      : val(val)
     {
     }
 
     impl_type val;
-};
+  };
 
-template <class Enum>
-constexpr auto operator&(Enum e1, Enum e2) noexcept
-    -> typename std::enable_if<enable_bitmask<Enum>::value, loopp::BitMask<Enum>>::type
-{
-  return loopp::BitMask<Enum>(e1) & e2;
-}
+  template<class Enum>
+  constexpr auto operator&(Enum e1, Enum e2) noexcept -> typename std::enable_if<enable_bitmask<Enum>::value, loopp::BitMask<Enum>>::type
+  {
+    return loopp::BitMask<Enum>(e1) & e2;
+  }
 
-template <class Enum>
-constexpr auto operator|(Enum e1, Enum e2) noexcept
-    -> typename std::enable_if<enable_bitmask<Enum>::value, loopp::BitMask<Enum>>::type
-{
-  return loopp::BitMask<Enum>(e1) | e2;
-}
+  template<class Enum>
+  constexpr auto operator|(Enum e1, Enum e2) noexcept -> typename std::enable_if<enable_bitmask<Enum>::value, loopp::BitMask<Enum>>::type
+  {
+    return loopp::BitMask<Enum>(e1) | e2;
+  }
 
-template <class Enum>
-constexpr auto operator^(Enum e1, Enum e2) noexcept
-    -> typename std::enable_if<enable_bitmask<Enum>::value, loopp::BitMask<Enum>>::type
-{
-  return loopp::BitMask<Enum>(e1) ^ e2;
-}
-}
+  template<class Enum>
+  constexpr auto operator^(Enum e1, Enum e2) noexcept -> typename std::enable_if<enable_bitmask<Enum>::value, loopp::BitMask<Enum>>::type
+  {
+    return loopp::BitMask<Enum>(e1) ^ e2;
+  }
+} // namespace loopp
 
-#define DEFINE_BITMASK(name)                    \
-  template <>                                   \
-  struct enable_bitmask<name>                   \
-    : std::true_type                            \
-  {                                             \
+#define DEFINE_BITMASK(name)                                                                                                               \
+  template<>                                                                                                                               \
+  struct enable_bitmask<name> : std::true_type                                                                                             \
+  {                                                                                                                                        \
   };
 
 #endif // LOOPP_BITMASK_HPP

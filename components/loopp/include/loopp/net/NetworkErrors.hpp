@@ -28,28 +28,30 @@ namespace loopp
   namespace net
   {
     enum class NetworkErrc
-      {
-        // no 0
-        Timeout = 1,
-        Cancelled,
-        InternalError,
-        NameResolutionFailed,
-        InvalidAddress,
-        TLSProtocolError,
-        ConnectionRefused,
-        ConnectionClosed,
-        ReadError,
-        WriteError,
-      };
+    {
+      // no 0
+      Timeout = 1,
+      Cancelled,
+      InternalError,
+      NameResolutionFailed,
+      InvalidAddress,
+      TLSProtocolError,
+      ConnectionRefused,
+      ConnectionClosed,
+      ReadError,
+      WriteError,
+    };
 
     std::error_code make_error_code(NetworkErrc);
-  }
-}
+  } // namespace net
+} // namespace loopp
 
 namespace std
 {
-  template <>
-  struct is_error_code_enum<loopp::net::NetworkErrc> : true_type {};
-}
+  template<>
+  struct is_error_code_enum<loopp::net::NetworkErrc> : true_type
+  {
+  };
+} // namespace std
 
 #endif // LOOPP_NET_NETWORKERRORS_HPP

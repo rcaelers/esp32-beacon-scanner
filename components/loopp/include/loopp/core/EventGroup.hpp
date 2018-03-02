@@ -48,11 +48,11 @@ namespace loopp
           }
       }
 
-      EventGroup(const EventGroup&) = delete;
-      EventGroup& operator=(const EventGroup&) = delete;
+      EventGroup(const EventGroup &) = delete;
+      EventGroup &operator=(const EventGroup &) = delete;
 
-      EventGroup(EventGroup &&lhs) :
-        event_group(lhs.event_group)
+      EventGroup(EventGroup &&lhs)
+        : event_group(lhs.event_group)
       {
         lhs.event_group = nullptr;
       }
@@ -105,7 +105,7 @@ namespace loopp
     private:
       EventGroupHandle_t event_group;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_EVENTGROUP_HPP

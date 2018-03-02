@@ -46,7 +46,7 @@ using namespace loopp;
 using namespace loopp::http;
 
 HttpClient::HttpClient(std::shared_ptr<loopp::core::MainLoop> loop)
-    : loop(loop)
+  : loop(loop)
 {
 }
 
@@ -115,18 +115,17 @@ HttpClient::read_body_async(std::size_t size, body_callback_t callback)
   if (bytes_to_read > 0)
     {
       auto self = shared_from_this();
-      sock->read_async(response_buffer, bytes_to_read,
-                       [this, self, callback](std::error_code ec, std::size_t bytes_transferred) {
-                         if (!ec)
-                           {
-                             this->body_length_left -= bytes_transferred;
-                             callback(ec, &response_buffer);
-                           }
-                         else
-                           {
-                             handle_error("read response", ec);
-                           }
-                       });
+      sock->read_async(response_buffer, bytes_to_read, [this, self, callback](std::error_code ec, std::size_t bytes_transferred) {
+        if (!ec)
+          {
+            this->body_length_left -= bytes_transferred;
+            callback(ec, &response_buffer);
+          }
+        else
+          {
+            handle_error("read response", ec);
+          }
+      });
     }
   else
     {
@@ -183,8 +182,7 @@ HttpClient::update_request_headers()
 
   headers.emplace("Host", request.uri().host());
 
-  if (!request.headers().has("Transfer-Encoding")
-      || !boost::ifind_first(request.headers()["Transfer-Encoding"], "chunked"))
+  if (!request.headers().has("Transfer-Encoding") || !boost::ifind_first(request.headers()["Transfer-Encoding"], "chunked"))
     {
       headers.emplace("Content-Length", std::to_string(request.content().size()));
     }
@@ -293,8 +291,7 @@ HttpClient::parse_headers(std::istream &response_stream)
               body_length_left = 0;
             }
 
-          ESP_LOGD(tag, "body-size=%d left=%d in-buffer=%d", body_length, body_length_left,
-                   response_buffer.consume_size());
+          ESP_LOGD(tag, "body-size=%d left=%d in-buffer=%d", body_length, body_length_left, response_buffer.consume_size());
         }
     }
 }

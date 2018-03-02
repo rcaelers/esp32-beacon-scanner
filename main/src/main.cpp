@@ -104,14 +104,12 @@ public:
   Main &operator=(Main &&other) = delete;
 
 private:
-  void
-  on_wifi_system_event(system_event_t event)
+  void on_wifi_system_event(system_event_t event)
   {
     ESP_LOGI(tag, "-> System event %d", event.event_id);
   }
 
-  void
-  on_wifi_timeout()
+  void on_wifi_timeout()
   {
     ESP_LOGI(tag, "-> Wifi timer");
     wifi_timeout_timer = 0;
@@ -123,8 +121,7 @@ private:
       }
   }
 
-  void
-  on_wifi_connected(bool connected)
+  void on_wifi_connected(bool connected)
   {
     if (connected)
       {
@@ -150,8 +147,7 @@ private:
       }
   }
 
-  void
-  on_mqtt_connected(bool connected)
+  void on_mqtt_connected(bool connected)
   {
     if (connected)
       {
@@ -184,14 +180,12 @@ private:
       }
   }
 
-  void
-  on_mqtt_data(std::string topic, std::string payload)
+  void on_mqtt_data(std::string topic, std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   }
 
-  void
-  on_firmware_provisioning(json top)
+  void on_firmware_provisioning(json top)
   {
     try
       {
@@ -221,8 +215,7 @@ private:
       }
   }
 
-  void
-  on_provisioning(std::string payload)
+  void on_provisioning(std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT provisioning: %s", payload.c_str());
 
@@ -270,8 +263,7 @@ private:
       }
   }
 
-  void
-  on_remote_command(std::string payload)
+  void on_remote_command(std::string payload)
   {
     ESP_LOGI(tag, "-> MQTT remote command: %s", payload.c_str());
 
@@ -307,8 +299,7 @@ private:
       }
   }
 
-  void
-  firmware_update(std::string url, int timeout)
+  void firmware_update(std::string url, int timeout)
   {
     // 520K is insufficient to run two TLS connections, so close MQTT before retrieving new firmware.
     mqtt->disconnect();
@@ -337,8 +328,7 @@ private:
     });
   }
 
-  void
-  main_task()
+  void main_task()
   {
     wifi.set_ssid(WIFI_SSID);
     wifi.set_passphase(WIFI_PASS);

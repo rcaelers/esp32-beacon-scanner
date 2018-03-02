@@ -30,6 +30,6 @@ namespace loopp
   {
     typedef LockGuard<loopp::core::Mutex> ScopedLock;
   }
-}
+} // namespace loopp
 
 #endif // LOOPP_CORE_SCOPED_LOCK_HPP

@@ -43,7 +43,7 @@ namespace loopp
       virtual void socket_close();
       virtual void socket_on_connected(std::string host, connect_callback_t callback);
     };
-  }
-}
+  } // namespace net
+} // namespace loopp
 
 #endif // LOOPP_NET_TCPSTREAM_HPP

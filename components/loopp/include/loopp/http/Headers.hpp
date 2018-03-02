@@ -34,7 +34,7 @@ namespace loopp
       {
         struct nocase_compare : public std::binary_function<unsigned char, unsigned char, bool>
         {
-          bool operator()(const unsigned char& c1, const unsigned char& c2) const
+          bool operator()(const unsigned char &c1, const unsigned char &c2) const
           {
             return tolower(c1) < tolower(c2);
           }
@@ -44,7 +44,7 @@ namespace loopp
           return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(), nocase_compare());
         }
       };
-    }
+    } // namespace detail
 
     class Headers
     {
@@ -55,9 +55,9 @@ namespace loopp
       Headers(const Headers &other) = default;
       Headers(Headers &&other) = default;
       Headers &operator=(const Headers &other) = default;
-      Headers &operator=(Headers &&other) =  default;
+      Headers &operator=(Headers &&other) = default;
 
-      bool has(const std::string& name) const
+      bool has(const std::string &name) const
       {
         return headers.count(name) > 0;
       }
@@ -72,7 +72,7 @@ namespace loopp
         headers.emplace(name, value);
       }
 
-      void remove(const std::string& name)
+      void remove(const std::string &name)
       {
         headers.erase(name);
       }
@@ -92,19 +92,31 @@ namespace loopp
         return headers.at(name);
       }
 
-      friend std::ostream& operator<< (std::ostream& stream, const Headers &headers);
+      friend std::ostream &operator<<(std::ostream &stream, const Headers &headers);
 
-      HeadersMap::iterator begin() { return headers.begin(); }
-      HeadersMap::const_iterator begin() const { return headers.begin(); }
-      HeadersMap::iterator end() { return headers.end(); }
-      HeadersMap::const_iterator end() const { return headers.end(); }
+      HeadersMap::iterator begin()
+      {
+        return headers.begin();
+      }
+      HeadersMap::const_iterator begin() const
+      {
+        return headers.begin();
+      }
+      HeadersMap::iterator end()
+      {
+        return headers.end();
+      }
+      HeadersMap::const_iterator end() const
+      {
+        return headers.end();
+      }
 
       void parse(std::istream &stream);
 
     private:
       HeadersMap headers;
     };
-  }
-}
+  } // namespace http
+} // namespace loopp
 
 #endif // LOOPP_HTTP_HEADERS_HPP

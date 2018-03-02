@@ -59,7 +59,8 @@ Wifi::set_passphase(const std::string &passphrase)
   this->passphrase = passphrase;
 }
 
-void Wifi::set_auto_connect(bool auto_connect)
+void
+Wifi::set_auto_connect(bool auto_connect)
 {
   this->auto_connect = auto_connect;
 }
@@ -123,35 +124,35 @@ Wifi::on_sysem_event(system_event_t *event)
 
   switch (event->event_id)
     {
-    case SYSTEM_EVENT_STA_START:
-      tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, host_name.c_str());
-      esp_wifi_connect();
-      break;
+      case SYSTEM_EVENT_STA_START:
+        tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, host_name.c_str());
+        esp_wifi_connect();
+        break;
 
-    case SYSTEM_EVENT_STA_STOP:
-      connected_property.set(false);
-      break;
+      case SYSTEM_EVENT_STA_STOP:
+        connected_property.set(false);
+        break;
 
-    case SYSTEM_EVENT_STA_GOT_IP:
-      connected_property.set(true);
-      break;
+      case SYSTEM_EVENT_STA_GOT_IP:
+        connected_property.set(true);
+        break;
 
-    case SYSTEM_EVENT_STA_CONNECTED:
-      break;
+      case SYSTEM_EVENT_STA_CONNECTED:
+        break;
 
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      connected_property.set(false);
+      case SYSTEM_EVENT_STA_DISCONNECTED:
+        connected_property.set(false);
 
-      if (auto_connect)
-        {
-          esp_wifi_stop();
-          esp_wifi_start();
-          esp_wifi_connect();
-        }
-      break;
+        if (auto_connect)
+          {
+            esp_wifi_stop();
+            esp_wifi_start();
+            esp_wifi_connect();
+          }
+        break;
 
-    default:
-      break;
+      default:
+        break;
     }
 
   return ESP_OK;

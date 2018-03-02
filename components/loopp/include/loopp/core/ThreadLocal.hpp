@@ -65,6 +65,6 @@ namespace loopp
       loopp::core::Mutex mutex;
       std::unordered_map<TaskHandle_t, T> objects;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 #endif // LOOPP_CORE_THREADLOCAL_HPP

@@ -48,11 +48,11 @@ namespace loopp
           }
       }
 
-      Mutex(const Mutex&) = delete;
-      Mutex& operator=(const Mutex&) = delete;
+      Mutex(const Mutex &) = delete;
+      Mutex &operator=(const Mutex &) = delete;
 
-      Mutex(Mutex &&lhs) :
-        mutex_handle(lhs.mutex_handle)
+      Mutex(Mutex &&lhs)
+        : mutex_handle(lhs.mutex_handle)
       {
         lhs.mutex_handle = nullptr;
       }
@@ -98,7 +98,7 @@ namespace loopp
     private:
       SemaphoreHandle_t mutex_handle;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_MUTEX_HPP

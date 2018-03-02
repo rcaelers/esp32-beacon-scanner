@@ -28,8 +28,8 @@
 using namespace loopp;
 using namespace loopp::net;
 
-TCPStream::TCPStream(std::shared_ptr<loopp::core::MainLoop> loop) :
-  Stream(loop)
+TCPStream::TCPStream(std::shared_ptr<loopp::core::MainLoop> loop)
+  : Stream(loop)
 {
 }
 

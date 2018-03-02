@@ -31,14 +31,17 @@ namespace loopp
     class Property : public Signal<void(T)>
     {
     public:
-      Property(T initial) : value(initial) {}
+      Property(T initial)
+        : value(initial)
+      {
+      }
       ~Property() = default;
 
-      Property(const Property&) = delete;
-      Property& operator=(const Property&) = delete;
+      Property(const Property &) = delete;
+      Property &operator=(const Property &) = delete;
 
-      Property(Property &&lhs) :
-        value(std::move(lhs.value))
+      Property(Property &&lhs)
+        : value(std::move(lhs.value))
       {
       }
 
@@ -77,7 +80,7 @@ namespace loopp
     private:
       T value;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_PROPERTY_HPP

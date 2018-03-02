@@ -35,9 +35,9 @@ namespace
 {
   inline unsigned char to_hex(unsigned char c)
   {
-    return  c + (c > 9 ? ('A' - 10) : '0');
+    return c + (c > 9 ? ('A' - 10) : '0');
   }
-}
+} // namespace
 
 const std::string
 Uri::escape(const std::string &in)
@@ -75,16 +75,15 @@ Uri::unescape(const std::string &in)
 void
 Uri::parse(const std::string &uri)
 {
-  const string uri_regex =
-    "((?<scheme>[^:/?#]+)://)?"
-    "((?<username>[^:@]+)(:(?<password>[^@]+))?@)?"
-    "(?<host>[a-zA-Z0-9.-]*)"
-    "(:(?<port>[\\d]{2,5}))?"
-    "(?<fullpath>"
-    "(?<path>[/\\\\][^?#]*)?"
-    "(\\?(?<query>[^#]*))?"
-    "(#(?<fragment>.*))?"
-    ")";
+  const string uri_regex = "((?<scheme>[^:/?#]+)://)?"
+                           "((?<username>[^:@]+)(:(?<password>[^@]+))?@)?"
+                           "(?<host>[a-zA-Z0-9.-]*)"
+                           "(:(?<port>[\\d]{2,5}))?"
+                           "(?<fullpath>"
+                           "(?<path>[/\\\\][^?#]*)?"
+                           "(\\?(?<query>[^#]*))?"
+                           "(#(?<fragment>.*))?"
+                           ")";
 
   boost::regex re(uri_regex, boost::regex::icase);
 
@@ -112,7 +111,7 @@ Uri::parse(const std::string &uri)
     }
   else
     {
-      port_ = (scheme_ == "https") ? 443: 80;
+      port_ = (scheme_ == "https") ? 443 : 80;
     }
 
   path_ = matches["path"];
@@ -142,17 +141,17 @@ namespace loopp
 {
   namespace http
   {
-    std::ostream& operator<< (std::ostream& stream, const Uri& u)
+    std::ostream &operator<<(std::ostream &stream, const Uri &u)
     {
       stream << "[URI scheme = " << u.scheme() << " "
              << "username = " << u.username() << " "
              << "password = " << u.password() << " "
-             << "port = " <<u.port() << " "
+             << "port = " << u.port() << " "
              << "path = " << u.path() << " "
              << "fragment = " << u.fragment() << " "
              << "query = " << u.query() << " "
              << "fullpath = " << u.fullpath() << "]";
       return stream;
     }
-  }
-}
+  } // namespace http
+} // namespace loopp

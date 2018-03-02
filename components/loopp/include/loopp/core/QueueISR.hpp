@@ -59,20 +59,17 @@ namespace loopp
       QueueISR(QueueISR &&lhs) = delete;
       QueueISR &operator=(QueueISR &&lhs) = delete;
 
-      void IRAM_ATTR
-      push(const T &obj)
+      void IRAM_ATTR push(const T &obj)
       {
         xQueueSendFromISR(queue_handle, &obj, NULL);
       }
 
-      bool
-      pop(T &obj)
+      bool pop(T &obj)
       {
         return xQueueReceive(queue_handle, &obj, portMAX_DELAY) == pdTRUE;
       }
 
-      nonstd::optional<T>
-      pop()
+      nonstd::optional<T> pop()
       {
         nonstd::optional<T> ret;
         T obj;

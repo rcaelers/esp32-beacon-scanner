@@ -41,8 +41,8 @@ namespace loopp
 
       OTA(std::shared_ptr<loopp::core::MainLoop> loop);
       ~OTA() = default;
-      OTA(const OTA&) = delete;
-      OTA& operator=(const OTA&) = delete;
+      OTA(const OTA &) = delete;
+      OTA &operator=(const OTA &) = delete;
 
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
@@ -65,7 +65,7 @@ namespace loopp
       const esp_partition_t *update_partition = NULL;
       loopp::core::MainLoop::timer_id timeout_timer = 0;
     };
-  }
-}
+  } // namespace ota
+} // namespace loopp
 
 #endif // LOOPP_OTA_OT_HPP

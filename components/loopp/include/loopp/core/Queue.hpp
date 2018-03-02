@@ -39,22 +39,22 @@ namespace loopp
     {
     public:
       Queue(int max_size = 100)
-        : produce_sem(max_size, max_size),
-          consume_sem(max_size, 0),
-          max_size(max_size)
+        : produce_sem(max_size, max_size)
+        , consume_sem(max_size, 0)
+        , max_size(max_size)
       {
       }
 
       ~Queue() = default;
-      Queue(const Queue&) = delete;
-      Queue &operator=(const Queue&) = delete;
+      Queue(const Queue &) = delete;
+      Queue &operator=(const Queue &) = delete;
 
       Queue(Queue &&lhs)
-        : mutex(std::move(lhs.mutex)),
-          produce_sem(std::move(lhs.produce_sem)),
-          consume_sem(std::move(lhs.consume_sem)),
-          queue_data(std::move(lhs.queue_data)),
-          max_size(lhs.max_size)
+        : mutex(std::move(lhs.mutex))
+        , produce_sem(std::move(lhs.produce_sem))
+        , consume_sem(std::move(lhs.consume_sem))
+        , queue_data(std::move(lhs.queue_data))
+        , max_size(lhs.max_size)
       {
       }
 
@@ -108,14 +108,14 @@ namespace loopp
         return ok;
       }
 
-      template <class... Args>
-      bool emplace(Args&&... args)
+      template<class... Args>
+      bool emplace(Args &&... args)
       {
         return emplace_for(std::chrono::milliseconds(portMAX_DELAY), std::forward<Args>(args)...);
       }
 
-      template <class... Args>
-      bool emplace_for(std::chrono::milliseconds timeout_duration, Args&&... args)
+      template<class... Args>
+      bool emplace_for(std::chrono::milliseconds timeout_duration, Args &&... args)
       {
         bool ok = produce_sem.take(timeout_duration);
         if (ok)
@@ -184,7 +184,7 @@ namespace loopp
       std::deque<T> queue_data;
       int max_size = 0;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_QUEUE_HPP

@@ -24,11 +24,11 @@ namespace
 {
   struct NetworkErrCategory : std::error_category
   {
-    const char* name() const noexcept override;
+    const char *name() const noexcept override;
     std::string message(int ev) const override;
   };
 
-  const char* NetworkErrCategory::name() const noexcept
+  const char *NetworkErrCategory::name() const noexcept
   {
     return "network";
   }
@@ -37,33 +37,33 @@ namespace
   {
     switch (static_cast<loopp::net::NetworkErrc>(ev))
       {
-      case loopp::net::NetworkErrc::Timeout:
-        return "network timeout";
-      case loopp::net::NetworkErrc::Cancelled:
-        return "operation cancelled";
-      case loopp::net::NetworkErrc::InternalError:
-        return "internal error";
-      case loopp::net::NetworkErrc::NameResolutionFailed:
-        return "name resolution failed";
-      case loopp::net::NetworkErrc::InvalidAddress:
-        return "invalid address";
-      case loopp::net::NetworkErrc::TLSProtocolError:
-        return "TLS protocol error";
-      case loopp::net::NetworkErrc::ConnectionRefused:
-        return "connection refused";
-      case loopp::net::NetworkErrc::ConnectionClosed:
-        return "connection closed";
-      case loopp::net::NetworkErrc::ReadError:
-        return "read error";
-      case loopp::net::NetworkErrc::WriteError:
-        return "write error";
-      default:
-        return "(unrecognized error)";
+        case loopp::net::NetworkErrc::Timeout:
+          return "network timeout";
+        case loopp::net::NetworkErrc::Cancelled:
+          return "operation cancelled";
+        case loopp::net::NetworkErrc::InternalError:
+          return "internal error";
+        case loopp::net::NetworkErrc::NameResolutionFailed:
+          return "name resolution failed";
+        case loopp::net::NetworkErrc::InvalidAddress:
+          return "invalid address";
+        case loopp::net::NetworkErrc::TLSProtocolError:
+          return "TLS protocol error";
+        case loopp::net::NetworkErrc::ConnectionRefused:
+          return "connection refused";
+        case loopp::net::NetworkErrc::ConnectionClosed:
+          return "connection closed";
+        case loopp::net::NetworkErrc::ReadError:
+          return "read error";
+        case loopp::net::NetworkErrc::WriteError:
+          return "write error";
+        default:
+          return "(unrecognized error)";
       }
   }
 
-  const NetworkErrCategory theNetworkErrCategory {};
-}
+  const NetworkErrCategory theNetworkErrCategory{};
+} // namespace
 
 namespace loopp
 {
@@ -71,7 +71,7 @@ namespace loopp
   {
     std::error_code make_error_code(net::NetworkErrc ec)
     {
-      return {static_cast<int>(ec), theNetworkErrCategory};
+      return { static_cast<int>(ec), theNetworkErrCategory };
     }
-  }
-}
+  } // namespace net
+} // namespace loopp

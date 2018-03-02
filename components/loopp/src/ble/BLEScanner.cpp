@@ -38,23 +38,20 @@ static const char tag[] = "BLE";
 using namespace loopp;
 using namespace loopp::ble;
 
-static esp_ble_scan_params_t ble_scan_params =
-  {
-    .scan_type              = BLE_SCAN_TYPE_PASSIVE,
-    .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
-    .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
-    .scan_interval          = 0x50,
-    .scan_window            = 0x30,
-  };
+static esp_ble_scan_params_t ble_scan_params = {
+  .scan_type = BLE_SCAN_TYPE_PASSIVE,
+  .own_addr_type = BLE_ADDR_TYPE_PUBLIC,
+  .scan_filter_policy = BLE_SCAN_FILTER_ALLOW_ALL,
+  .scan_interval = 0x50,
+  .scan_window = 0x30,
+};
 
 BLEScanner::BLEScanner()
 {
   init();
 }
 
-BLEScanner::~BLEScanner()
-{
-}
+BLEScanner::~BLEScanner() {}
 
 void
 BLEScanner::gap_event_handler_static(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
@@ -67,62 +64,63 @@ BLEScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 {
   switch (event)
     {
-    case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
-      {
-        ESP_LOGI(tag, "Scan param set complete, start scanning.");
-        esp_ble_gap_start_scanning(scan_duration);
-        break;
-      }
+      case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
+        {
+          ESP_LOGI(tag, "Scan param set complete, start scanning.");
+          esp_ble_gap_start_scanning(scan_duration);
+          break;
+        }
 
-    case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
-      if (param->scan_start_cmpl.status != ESP_BT_STATUS_SUCCESS)
-        {
-          ESP_LOGE(tag, "Scan start failed.");
-        }
-      else
-        {
-          ESP_LOGI(tag, "Scan start successfully.");
-        }
-      break;
-
-    case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
-      if (param->scan_stop_cmpl.status != ESP_BT_STATUS_SUCCESS)
-        {
-          ESP_LOGE(tag, "Scan stop failed.");
-        }
-      else
-        {
-          ESP_LOGI(tag, "Scan stop successfully.");
-        }
-      break;
-
-    case ESP_GAP_BLE_SCAN_RESULT_EVT:
-      {
-        esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
-        switch (scan_result->scan_rst.search_evt)
+      case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
+        if (param->scan_start_cmpl.status != ESP_BT_STATUS_SUCCESS)
           {
-          case ESP_GAP_SEARCH_INQ_RES_EVT:
-            {
-              ScanResult beacon(&scan_result->scan_rst);
-              signal_scan_result(std::move(beacon));
-              break;
-            }
-
-          case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
-            ESP_LOGI(tag, "Scan completed, restarting.");
-            signal_scan_complete();
-            esp_ble_gap_set_scan_params(&ble_scan_params);
-            break;
+            ESP_LOGE(tag, "Scan start failed.");
           }
-
-          default:
-            ESP_LOGI(tag, "Unhandled scan result %d.",  scan_result->scan_rst.search_evt);
-            break;
+        else
+          {
+            ESP_LOGI(tag, "Scan start successfully.");
           }
         break;
-      }
-    default:
-      break;
+
+      case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
+        if (param->scan_stop_cmpl.status != ESP_BT_STATUS_SUCCESS)
+          {
+            ESP_LOGE(tag, "Scan stop failed.");
+          }
+        else
+          {
+            ESP_LOGI(tag, "Scan stop successfully.");
+          }
+        break;
+
+      case ESP_GAP_BLE_SCAN_RESULT_EVT:
+        {
+          esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
+          switch (scan_result->scan_rst.search_evt)
+            {
+              case ESP_GAP_SEARCH_INQ_RES_EVT:
+                {
+                  ScanResult beacon(&scan_result->scan_rst);
+                  signal_scan_result(std::move(beacon));
+                  break;
+                }
+
+              case ESP_GAP_SEARCH_INQ_CMPL_EVT:
+                {
+                  ESP_LOGI(tag, "Scan completed, restarting.");
+                  signal_scan_complete();
+                  esp_ble_gap_set_scan_params(&ble_scan_params);
+                  break;
+                }
+
+              default:
+                ESP_LOGI(tag, "Unhandled scan result %d.", scan_result->scan_rst.search_evt);
+                break;
+            }
+          break;
+        }
+      default:
+        break;
     }
 }
 
@@ -174,8 +172,8 @@ BLEScanner::scan_result_signal()
 }
 
 BLEScanner::ScanResult::ScanResult(esp_ble_gap_cb_param_t::ble_scan_result_evt_param *scan_result)
-  : adv_data(reinterpret_cast<char *>(scan_result->ble_adv), scan_result->adv_data_len),
-    rssi(scan_result->rssi)
+  : adv_data(reinterpret_cast<char *>(scan_result->ble_adv), scan_result->adv_data_len)
+  , rssi(scan_result->rssi)
 {
   memcpy(bda, scan_result->bda, 6);
 }
@@ -187,7 +185,7 @@ BLEScanner::ScanResult::bda_as_string()
   stream << std::hex << std::setfill('0');
   stream << std::setw(2);
 
-  for (int i= 0; i < 6; i++)
+  for (int i = 0; i < 6; i++)
     {
       stream << (int)bda[i];
       if (i != 5)

@@ -39,7 +39,7 @@ namespace loopp
     class Resolver
     {
     public:
-      using resolved_callback_type = std::function<void (std::error_code ec, struct addrinfo *addr_list)>;
+      using resolved_callback_type = std::function<void(std::error_code ec, struct addrinfo *addr_list)>;
 
       static Resolver &instance();
       void resolve_async(std::string host, std::string port, resolved_callback_type callback);
@@ -55,9 +55,9 @@ namespace loopp
       {
       public:
         ResolveJob(std::string host, std::string port, resolved_callback_type callback)
-          : host(std::move(host)),
-            port(std::move(port)),
-            callback(std::move(callback))
+          : host(std::move(host))
+          , port(std::move(port))
+          , callback(std::move(callback))
         {
         }
         std::string host;
@@ -68,6 +68,6 @@ namespace loopp
       loopp::core::Queue<ResolveJob> queue;
       loopp::core::Task task;
     };
-  }
-}
+  } // namespace net
+} // namespace loopp
 #endif // LOOPP_NET_RESOLVER_HPP

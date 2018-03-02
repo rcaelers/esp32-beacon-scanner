@@ -37,20 +37,19 @@ namespace loopp
       typedef TaskHandle_t native_handle_type;
 
       enum class CoreId : BaseType_t
-        {
-          CPU0 = 0,
-          CPU1 = 1,
-          NoAffinity = tskNO_AFFINITY
-        };
+      {
+        CPU0 = 0,
+        CPU1 = 1,
+        NoAffinity = tskNO_AFFINITY
+      };
 
-      Task(const std::string &name, std::function<void ()>, CoreId core_id = CoreId::NoAffinity, uint16_t stack_size = 8192, UBaseType_t priority = 5);
+      Task(const std::string &name, std::function<void()>, CoreId core_id = CoreId::NoAffinity, uint16_t stack_size = 8192, UBaseType_t priority = 5);
       ~Task();
 
-      Task(const Task&) = delete;
-      Task &operator=(const Task&) = delete;
+      Task(const Task &) = delete;
+      Task &operator=(const Task &) = delete;
 
-      native_handle_type
-      native_handle()
+      native_handle_type native_handle()
       {
         return task_handle;
       }
@@ -60,12 +59,12 @@ namespace loopp
 
     private:
       const std::string name;
-      std::function<void ()> func;
+      std::function<void()> func;
       native_handle_type task_handle = nullptr;
       uint32_t stack_size = 0;
       UBaseType_t priority = 0;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_TASK_HPP

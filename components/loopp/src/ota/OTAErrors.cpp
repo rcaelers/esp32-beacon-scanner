@@ -24,11 +24,11 @@ namespace
 {
   struct OTAErrCategory : std::error_category
   {
-    const char* name() const noexcept override;
+    const char *name() const noexcept override;
     std::string message(int ev) const override;
   };
 
-  const char* OTAErrCategory::name() const noexcept
+  const char *OTAErrCategory::name() const noexcept
   {
     return "ota";
   }
@@ -37,19 +37,19 @@ namespace
   {
     switch (static_cast<loopp::ota::OTAErrc>(ev))
       {
-      case loopp::ota::OTAErrc::Timeout:
-        return "network timeout";
-      case loopp::ota::OTAErrc::InternalError:
-        return "internal error";
-      case loopp::ota::OTAErrc::InvalidURI:
-        return "invalid URI";
-      default:
-        return "(unrecognized error)";
+        case loopp::ota::OTAErrc::Timeout:
+          return "network timeout";
+        case loopp::ota::OTAErrc::InternalError:
+          return "internal error";
+        case loopp::ota::OTAErrc::InvalidURI:
+          return "invalid URI";
+        default:
+          return "(unrecognized error)";
       }
   }
 
-  const OTAErrCategory theOTAErrCategory {};
-}
+  const OTAErrCategory theOTAErrCategory{};
+} // namespace
 
 namespace loopp
 {
@@ -57,7 +57,7 @@ namespace loopp
   {
     std::error_code make_error_code(OTAErrc ec)
     {
-      return {static_cast<int>(ec), theOTAErrCategory};
+      return { static_cast<int>(ec), theOTAErrCategory };
     }
-  }
-}
+  } // namespace ota
+} // namespace loopp

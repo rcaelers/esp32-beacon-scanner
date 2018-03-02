@@ -37,11 +37,11 @@ static const char tag[] = "MQTT";
 using namespace loopp;
 using namespace loopp::mqtt;
 
-MqttClient::MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string client_id, std::string host, int port) :
-  loop(loop),
-  client_id(std::move(client_id)),
-  host(std::move(host)),
-  port(port)
+MqttClient::MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string client_id, std::string host, int port)
+  : loop(loop)
+  , client_id(std::move(client_id))
+  , host(std::move(host))
+  , port(port)
 {
 }
 
@@ -122,18 +122,18 @@ MqttClient::connect()
         }
 
       auto self = shared_from_this();
-      sock->connect(host, port, [this, self] (std::error_code ec) {
-          if (!ec)
-            {
-              ESP_LOGI(tag, "Mqtt connected");
-              heap_caps_print_heap_info(0);
-              send_connect();
-            }
-          else
-            {
-              handle_error("connect", ec);
-            }
-        });
+      sock->connect(host, port, [this, self](std::error_code ec) {
+        if (!ec)
+          {
+            ESP_LOGI(tag, "Mqtt connected");
+            heap_caps_print_heap_info(0);
+            send_connect();
+          }
+        else
+          {
+            handle_error("connect", ec);
+          }
+      });
     }
   catch (std::system_error &e)
     {
@@ -172,9 +172,7 @@ MqttClient::publish(std::string topic, std::string payload, PublishOptions optio
     }
 
   auto self = shared_from_this();
-  loop->invoke([this, self, topic, payload, options] () {
-      send_publish(topic, payload, options);
-    });
+  loop->invoke([this, self, topic, payload, options]() { send_publish(topic, payload, options); });
 }
 
 void
@@ -185,11 +183,11 @@ MqttClient::subscribe(std::string topic)
   if (connected_property.get())
     {
       auto self = shared_from_this();
-      loop->invoke([this, self, topic] () {
-          std::list<std::string> topics;
-          topics.push_back(topic);
-          send_subscribe(topics);
-        });
+      loop->invoke([this, self, topic]() {
+        std::list<std::string> topics;
+        topics.push_back(topic);
+        send_subscribe(topics);
+      });
     }
 }
 
@@ -201,11 +199,11 @@ MqttClient::unsubscribe(std::string topic)
   if (connected_property.get())
     {
       auto self = shared_from_this();
-      loop->invoke([this, self, topic] () {
-          std::list<std::string> topics;
-          topics.push_back(topic);
-          send_unsubscribe(topics);
-        });
+      loop->invoke([this, self, topic]() {
+        std::list<std::string> topics;
+        topics.push_back(topic);
+        send_unsubscribe(topics);
+      });
     }
 }
 
@@ -277,13 +275,13 @@ MqttClient::send_connect()
         }
 
       auto self = shared_from_this();
-      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
-          ec = verify("send connect", bytes_transferred, pkt->size(), ec);
-          if (!ec)
-            {
-              async_read_control_packet();
-            }
-        });
+      sock->write_async(pkt->get_buffer(), [this, self, pkt](std::error_code ec, std::size_t bytes_transferred) {
+        ec = verify("send connect", bytes_transferred, pkt->size(), ec);
+        if (!ec)
+          {
+            async_read_control_packet();
+          }
+      });
     }
   catch (std::system_error &e)
     {
@@ -301,15 +299,15 @@ MqttClient::send_ping()
       pkt->add_fixed_header(loopp::mqtt::PacketType::PingReq, 0);
       pkt->add(0);
       auto self = shared_from_this();
-      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
-          verify("send ping", bytes_transferred, pkt->size(), ec);
-          pending_ping_count++;
+      sock->write_async(pkt->get_buffer(), [this, self, pkt](std::error_code ec, std::size_t bytes_transferred) {
+        verify("send ping", bytes_transferred, pkt->size(), ec);
+        pending_ping_count++;
 
-          if (pending_ping_count > pending_ping_count_limit)
-            {
-              handle_error("ping response timeout ", MqttErrc::Timeout);
-            }
-        });
+        if (pending_ping_count > pending_ping_count_limit)
+          {
+            handle_error("ping response timeout ", MqttErrc::Timeout);
+          }
+      });
     }
   catch (std::system_error &e)
     {
@@ -341,9 +339,9 @@ MqttClient::send_publish(std::string topic, std::string payload, PublishOptions 
       pkt->append(payload);
 
       auto self = shared_from_this();
-      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
-          verify("send publish", bytes_transferred, pkt->size(), ec);
-        });
+      sock->write_async(pkt->get_buffer(), [this, self, pkt](std::error_code ec, std::size_t bytes_transferred) {
+        verify("send publish", bytes_transferred, pkt->size(), ec);
+      });
     }
   catch (std::system_error &e)
     {
@@ -359,9 +357,8 @@ MqttClient::send_subscribe(std::list<std::string> topics)
       std::shared_ptr<MqttPacket> pkt = std::make_shared<MqttPacket>();
       packet_id++;
 
-      std::size_t len = 2 + std::accumulate(topics.begin(), topics.end(), 0, [](int sum, const std::string &s) {
-          return sum + s.size() + 2 + 1;
-        });
+      std::size_t len = 2 +
+                        std::accumulate(topics.begin(), topics.end(), 0, [](int sum, const std::string &s) { return sum + s.size() + 2 + 1; });
 
       pkt->add_fixed_header(loopp::mqtt::PacketType::Subscribe, 0b0010u);
       pkt->add_length(len);
@@ -374,9 +371,9 @@ MqttClient::send_subscribe(std::list<std::string> topics)
         }
 
       auto self = shared_from_this();
-      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
-          verify("send subscribe", bytes_transferred, pkt->size(), ec);
-        });
+      sock->write_async(pkt->get_buffer(), [this, self, pkt](std::error_code ec, std::size_t bytes_transferred) {
+        verify("send subscribe", bytes_transferred, pkt->size(), ec);
+      });
     }
   catch (std::system_error &e)
     {
@@ -392,9 +389,7 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
       std::shared_ptr<MqttPacket> pkt = std::make_shared<MqttPacket>();
       packet_id++;
 
-      std::size_t len = 2 + std::accumulate(topics.begin(), topics.end(), 0, [](int sum, const std::string &s) {
-          return sum + s.size() + 2;
-        });
+      std::size_t len = 2 + std::accumulate(topics.begin(), topics.end(), 0, [](int sum, const std::string &s) { return sum + s.size() + 2; });
 
       pkt->add_fixed_header(loopp::mqtt::PacketType::Unsubscribe, 0b0010u);
       pkt->add_length(len);
@@ -406,9 +401,9 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
         }
 
       auto self = shared_from_this();
-      sock->write_async(pkt->get_buffer(), [this, self, pkt] (std::error_code ec, std::size_t bytes_transferred) {
-          verify("send unsubscribe", bytes_transferred, pkt->size(), ec);
-        });
+      sock->write_async(pkt->get_buffer(), [this, self, pkt](std::error_code ec, std::size_t bytes_transferred) {
+        verify("send unsubscribe", bytes_transferred, pkt->size(), ec);
+      });
     }
   catch (std::system_error &e)
     {
@@ -420,13 +415,13 @@ void
 MqttClient::async_read_control_packet()
 {
   auto self = shared_from_this();
-  sock->read_async(buffer, 1, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
-      ec = verify("fixed header", bytes_transferred, 1, ec);
-      if (!ec)
-        {
-          handle_control_packet();
-        }
-    });
+  sock->read_async(buffer, 1, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+    ec = verify("fixed header", bytes_transferred, 1, ec);
+    if (!ec)
+      {
+        handle_control_packet();
+      }
+  });
 }
 
 void
@@ -444,13 +439,13 @@ void
 MqttClient::async_read_remaining_length()
 {
   auto self = shared_from_this();
-  sock->read_async(buffer, 1, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
-      ec = verify("remaining length", bytes_transferred, 1, ec);
-      if (!ec)
-        {
-          handle_remaining_length();
-        }
-    });
+  sock->read_async(buffer, 1, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+    ec = verify("remaining length", bytes_transferred, 1, ec);
+    if (!ec)
+      {
+        handle_remaining_length();
+      }
+  });
 }
 
 void
@@ -483,14 +478,14 @@ void
 MqttClient::async_read_payload()
 {
   auto self = shared_from_this();
-  sock->read_async(buffer, remaining_length, [this, self] (std::error_code ec, std::size_t bytes_transferred) {
-      ec = verify("payload", bytes_transferred, remaining_length, ec);
-      if (!ec)
-        {
-          handle_payload();
-          buffer.consume_commit(remaining_length);
-        }
-    });
+  sock->read_async(buffer, remaining_length, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+    ec = verify("payload", bytes_transferred, remaining_length, ec);
+    if (!ec)
+      {
+        handle_payload();
+        buffer.consume_commit(remaining_length);
+      }
+  });
 }
 
 std::error_code
@@ -501,44 +496,44 @@ MqttClient::handle_payload()
 
   switch (packet_type)
     {
-    case PacketType::ConnAck:
-      ec = handle_connect_ack();
-      break;
+      case PacketType::ConnAck:
+        ec = handle_connect_ack();
+        break;
 
-    case PacketType::Publish:
-      ec = handle_publish();
-      break;
+      case PacketType::Publish:
+        ec = handle_publish();
+        break;
 
-    case PacketType::PubAck:
-      ec = handle_publish_ack();
-      break;
+      case PacketType::PubAck:
+        ec = handle_publish_ack();
+        break;
 
-    case PacketType::PubRec:
-      ec = handle_publish_received();
-      break;
+      case PacketType::PubRec:
+        ec = handle_publish_received();
+        break;
 
-    case PacketType::PubRel:
-      ec = handle_publish_release();
-      break;
+      case PacketType::PubRel:
+        ec = handle_publish_release();
+        break;
 
-    case PacketType::PubComp:
-      ec = handle_publish_complete();
-      break;
+      case PacketType::PubComp:
+        ec = handle_publish_complete();
+        break;
 
-    case PacketType::SubAck:
-      ec = handle_subscribe_ack();
-      break;
+      case PacketType::SubAck:
+        ec = handle_subscribe_ack();
+        break;
 
-    case PacketType::UnsubAck:
-      ec = handle_unsubscribe_ack();
-      break;
+      case PacketType::UnsubAck:
+        ec = handle_unsubscribe_ack();
+        break;
 
-    case PacketType::PingResp:
-      ec = handle_ping_response();
-      break;
+      case PacketType::PingResp:
+        ec = handle_ping_response();
+        break;
 
-    default:
-      verify("invalid payload type", 0, 0, MqttErrc::ProtocolError);
+      default:
+        verify("invalid payload type", 0, 0, MqttErrc::ProtocolError);
     }
 
   if (!ec)
@@ -555,7 +550,7 @@ MqttClient::handle_connect_ack()
   std::error_code ec = verify("handle ConnAck", remaining_length, 2, std::error_code());
   if (!ec)
     {
-      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.consume_data());
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
       uint8_t connect_return_code = static_cast<std::uint8_t>(payload_buffer[1]);
       if (connect_return_code != 0)
         {
@@ -678,8 +673,8 @@ MqttClient::handle_subscribe_ack()
 
 #ifdef NOT_YEY_USED
       // TODO: return response to client
-      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.consume_data());
-      int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
+      int id = (payload_buffer[0] << 8) + payload_buffer[1];
 
       for (int i = 2; i < remaining_length; i++)
         {
@@ -710,8 +705,8 @@ MqttClient::handle_unsubscribe_ack()
         }
 
 #ifdef NOT_USED
-      uint8_t *payload_buffer = reinterpret_cast<uint8_t*>(buffer.data());
-      int id = (payload_buffer[0] << 8) + payload_buffer[1] ;
+      uint8_t *payload_buffer = reinterpret_cast<uint8_t *>(buffer.data());
+      int id = (payload_buffer[0] << 8) + payload_buffer[1];
 #endif
     }
   catch (std::system_error &e)
@@ -806,7 +801,7 @@ MqttClient::match_topic(std::string topic, std::string filter)
 
       if (*filter_it == '+')
         {
-          while (*topic_it != '/'  && topic_it < topic.end())
+          while (*topic_it != '/' && topic_it < topic.end())
             {
               ++topic_it;
             }

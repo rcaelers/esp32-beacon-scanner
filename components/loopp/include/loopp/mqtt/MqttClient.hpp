@@ -34,10 +34,10 @@ namespace loopp
   namespace mqtt
   {
     enum class PublishOptions : uint8_t
-      {
-        None          = 0,
-        Retain        = 0b00000001u,
-      };
+    {
+      None = 0,
+      Retain = 0b00000001u,
+    };
   }
 
   DEFINE_BITMASK(mqtt::PublishOptions);
@@ -121,11 +121,11 @@ namespace loopp
       loopp::net::StreamBuffer buffer;
       std::size_t remaining_length = 0;
       int remaining_length_multiplier = 1;
-      uint8_t fixed_header = 0;;
+      uint8_t fixed_header = 0;
       loopp::core::MainLoop::timer_id ping_timer = 0;
       int packet_id = 0;
       subscribe_callback_t subscribe_callback;
-      loopp::core::Property<bool> connected_property { false };
+      loopp::core::Property<bool> connected_property{ false };
       int pending_ping_count = 0;
       std::list<std::string> subscriptions;
       std::map<std::string, subscribe_callback_t> filters;
@@ -134,7 +134,7 @@ namespace loopp
       static constexpr int keep_alive_sec = 60;
       static constexpr int pending_ping_count_limit = 5;
     };
-  }
-}
+  } // namespace mqtt
+} // namespace loopp
 
 #endif // LOOPP_MQTT_MQTTCLIENT_HPP

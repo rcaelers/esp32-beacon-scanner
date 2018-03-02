@@ -79,9 +79,7 @@ namespace loopp
     private:
       int_type underflow()
       {
-        return gptr() < egptr() ?
-                        traits_type::to_int_type(*gptr()) :
-          traits_type::eof();
+        return gptr() < egptr() ? traits_type::to_int_type(*gptr()) : traits_type::eof();
       }
 
       int_type overflow(int_type ch)
@@ -135,7 +133,7 @@ namespace loopp
       static constexpr std::size_t BUFFER_INCREASE_SIZE = 100;
       static constexpr std::size_t DEFAULT_MAX_BUFFER_SIZE = 10 * 1024;
     };
-  }
-}
+  } // namespace net
+} // namespace loopp
 
 #endif // LOOPP_NET_STREAM_BUFFER_HPP

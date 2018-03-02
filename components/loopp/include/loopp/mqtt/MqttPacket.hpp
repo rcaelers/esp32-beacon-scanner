@@ -32,43 +32,43 @@ namespace loopp
   namespace mqtt
   {
     enum class PacketType
-      {
-        Connect = 1,
-        ConnAck = 2,
-        Publish = 3,
-        PubAck = 4,
-        PubRec = 5,
-        PubRel = 6,
-        PubComp = 7,
-        Subscribe = 8,
-        SubAck = 9,
-        Unsubscribe = 10,
-        UnsubAck = 11,
-        PingReq = 12,
-        PingResp = 13,
-        Disconnect = 14,
-      };
+    {
+      Connect = 1,
+      ConnAck = 2,
+      Publish = 3,
+      PubAck = 4,
+      PubRec = 5,
+      PubRel = 6,
+      PubComp = 7,
+      Subscribe = 8,
+      SubAck = 9,
+      Unsubscribe = 10,
+      UnsubAck = 11,
+      PingReq = 12,
+      PingResp = 13,
+      Disconnect = 14,
+    };
 
     enum class ConnectFlags : uint8_t
-      {
-        None          = 0,
-        CleanSession  = 0b00000010u,
-        Will          = 0b00000100u,
-        WillRetain    = 0b00100000u,
-        Password      = 0b01000000u,
-        UserName      = 0b10000000u
-      };
+    {
+      None = 0,
+      CleanSession = 0b00000010u,
+      Will = 0b00000100u,
+      WillRetain = 0b00100000u,
+      Password = 0b01000000u,
+      UserName = 0b10000000u
+    };
 
     enum class PublishFlags : uint8_t
-      {
-        None          = 0,
-        Duplicate     = 0b00001000u,
-        Retain        = 0b00000001u,
-        QosMask       = 0b00000110u,
-        Qos0          = 0b00000000u,
-        Qos1          = 0b00000010u,
-        Qos2          = 0b00000100u,
-      };
+    {
+      None = 0,
+      Duplicate = 0b00001000u,
+      Retain = 0b00000001u,
+      QosMask = 0b00000110u,
+      Qos0 = 0b00000000u,
+      Qos1 = 0b00000010u,
+      Qos2 = 0b00000100u,
+    };
 
     class MqttPacket
     {
@@ -87,10 +87,10 @@ namespace loopp
       loopp::net::StreamBuffer buffer;
       std::ostream stream;
     };
-  }
+  } // namespace mqtt
 
   DEFINE_BITMASK(mqtt::ConnectFlags);
   DEFINE_BITMASK(mqtt::PublishFlags);
-}
+} // namespace loopp
 
 #endif // LOOPP_MQTT)MQTTPACKET_HPP

@@ -79,7 +79,7 @@ namespace loopp
       bool have_client_cert = false;
       bool have_ca_cert = false;
     };
-  }
-}
+  } // namespace net
+} // namespace loopp
 
 #endif // LOOPP_NE_TLSSTREAM_HPP

@@ -25,7 +25,8 @@ static const char tag[] = "MQTT";
 using namespace loopp;
 using namespace loopp::mqtt;
 
-MqttPacket::MqttPacket() : stream(&buffer)
+MqttPacket::MqttPacket()
+  : stream(&buffer)
 {
 }
 
@@ -64,7 +65,8 @@ MqttPacket::add_length(std::size_t size)
           b |= 128;
         }
       stream << b;
-    } while (size > 0);
+    }
+  while (size > 0);
 }
 
 void

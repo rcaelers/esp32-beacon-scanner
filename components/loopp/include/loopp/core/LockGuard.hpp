@@ -42,13 +42,13 @@ namespace loopp
         mutex.unlock();
       }
 
-      LockGuard(const LockGuard&) = delete;
-      LockGuard& operator=(const LockGuard&) = delete;
+      LockGuard(const LockGuard &) = delete;
+      LockGuard &operator=(const LockGuard &) = delete;
 
     private:
       mutex_type &mutex;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_LOCK_GUARD_HPP

@@ -81,7 +81,9 @@ namespace loopp
       };
     } // namespace details
 
-    class GPIODriver : public loopp::drivers::IDriver, public std::enable_shared_from_this<GPIODriver>
+    class GPIODriver
+      : public loopp::drivers::IDriver
+      , public std::enable_shared_from_this<GPIODriver>
     {
     public:
       GPIODriver(loopp::drivers::DriverContext context, nlohmann::json config);

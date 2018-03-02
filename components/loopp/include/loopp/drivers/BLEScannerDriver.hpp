@@ -35,7 +35,9 @@ namespace loopp
 {
   namespace drivers
   {
-    class BLEScannerDriver : public loopp::drivers::IDriver, public std::enable_shared_from_this<BLEScannerDriver>
+    class BLEScannerDriver
+      : public loopp::drivers::IDriver
+      , public std::enable_shared_from_this<BLEScannerDriver>
     {
     public:
       BLEScannerDriver(loopp::drivers::DriverContext context, nlohmann::json config);

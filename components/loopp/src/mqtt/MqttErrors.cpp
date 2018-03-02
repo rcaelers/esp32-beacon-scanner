@@ -24,11 +24,11 @@ namespace
 {
   struct MqttErrCategory : std::error_category
   {
-    const char* name() const noexcept override;
+    const char *name() const noexcept override;
     std::string message(int ev) const override;
   };
 
-  const char* MqttErrCategory::name() const noexcept
+  const char *MqttErrCategory::name() const noexcept
   {
     return "mqtt";
   }
@@ -37,21 +37,21 @@ namespace
   {
     switch (static_cast<loopp::mqtt::MqttErrc>(ev))
       {
-      case loopp::mqtt::MqttErrc::Timeout:
-        return "network timeout";
-      case loopp::mqtt::MqttErrc::InternalError:
-        return "internal error";
-      case loopp::mqtt::MqttErrc::ProtocolError:
-        return "protocol error";
-      case loopp::mqtt::MqttErrc::NotConnected:
-        return "not connected";
-      default:
-        return "(unrecognized error)";
+        case loopp::mqtt::MqttErrc::Timeout:
+          return "network timeout";
+        case loopp::mqtt::MqttErrc::InternalError:
+          return "internal error";
+        case loopp::mqtt::MqttErrc::ProtocolError:
+          return "protocol error";
+        case loopp::mqtt::MqttErrc::NotConnected:
+          return "not connected";
+        default:
+          return "(unrecognized error)";
       }
   }
 
-  const MqttErrCategory theMqttErrCategory {};
-}
+  const MqttErrCategory theMqttErrCategory{};
+} // namespace
 
 namespace loopp
 {
@@ -59,7 +59,7 @@ namespace loopp
   {
     std::error_code make_error_code(mqtt::MqttErrc ec)
     {
-      return {static_cast<int>(ec), theMqttErrCategory};
+      return { static_cast<int>(ec), theMqttErrCategory };
     }
-  }
-}
+  } // namespace mqtt
+} // namespace loopp

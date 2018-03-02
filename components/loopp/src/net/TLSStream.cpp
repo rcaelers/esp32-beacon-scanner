@@ -47,7 +47,9 @@ static const char tag[] = "NET";
 using namespace loopp;
 using namespace loopp::net;
 
-TLSStream::TLSStream(std::shared_ptr<loopp::core::MainLoop> loop) : Stream(loop), loop(loop)
+TLSStream::TLSStream(std::shared_ptr<loopp::core::MainLoop> loop)
+  : Stream(loop)
+  , loop(loop)
 {
   mbedtls_net_init(&server_fd);
   mbedtls_ssl_init(&ssl);
@@ -175,8 +177,7 @@ TLSStream::socket_on_connected(std::string host, connect_callback_t callback)
       int ret = mbedtls_ssl_set_hostname(&ssl, host.c_str());
       throw_if_failure("mbedtls_ssl_set_hostname", ret);
 
-      ret = mbedtls_ssl_config_defaults(&config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
-                                        MBEDTLS_SSL_PRESET_DEFAULT);
+      ret = mbedtls_ssl_config_defaults(&config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
       throw_if_failure("mbedtls_ssl_config_defaults", ret);
 
       mbedtls_ssl_conf_verify(&config, verify_certificate, NULL);
@@ -217,39 +218,39 @@ TLSStream::on_handshake(connect_callback_t callback)
       ESP_LOGD(tag, "Handshake ret = %x", -ret);
       switch (ret)
         {
-        case 0:
-          ESP_LOGD(tag, "TLS Handshake complete");
-          break;
+          case 0:
+            ESP_LOGD(tag, "TLS Handshake complete");
+            break;
 
-        case MBEDTLS_ERR_SSL_WANT_READ:
-          loop->notify_read(server_fd.fd, [this, self, callback](std::error_code ec) {
-            if (!ec)
-              {
-                on_handshake(callback);
-              }
-            else
-              {
-                callback(ec);
-              }
-          });
-          break;
+          case MBEDTLS_ERR_SSL_WANT_READ:
+            loop->notify_read(server_fd.fd, [this, self, callback](std::error_code ec) {
+              if (!ec)
+                {
+                  on_handshake(callback);
+                }
+              else
+                {
+                  callback(ec);
+                }
+            });
+            break;
 
-        case MBEDTLS_ERR_SSL_WANT_WRITE:
-          loop->notify_write(server_fd.fd, [this, self, callback](std::error_code ec) {
-            if (!ec)
-              {
-                on_handshake(callback);
-              }
-            else
-              {
-                callback(ec);
-              }
-          });
-          break;
+          case MBEDTLS_ERR_SSL_WANT_WRITE:
+            loop->notify_write(server_fd.fd, [this, self, callback](std::error_code ec) {
+              if (!ec)
+                {
+                  on_handshake(callback);
+                }
+              else
+                {
+                  callback(ec);
+                }
+            });
+            break;
 
-        default:
-          ESP_LOGE(tag, "TLS Handshake failed: %x", -ret);
-          throw_if_failure("mbedtls_ssl_handshake", ret);
+          default:
+            ESP_LOGE(tag, "TLS Handshake failed: %x", -ret);
+            throw_if_failure("mbedtls_ssl_handshake", ret);
         }
 
       if (ret == 0)

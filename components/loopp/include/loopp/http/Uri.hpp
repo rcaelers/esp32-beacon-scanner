@@ -64,7 +64,7 @@ namespace loopp
         return host_;
       }
 
-      uint16_t  port() const
+      uint16_t port() const
       {
         return port_;
       }
@@ -107,7 +107,7 @@ namespace loopp
       static const std::string escape(const std::string &in);
       static const std::string unescape(const std::string &in);
 
-      friend std::ostream& operator<< (std::ostream& stream, const Uri& uri);
+      friend std::ostream &operator<<(std::ostream &stream, const Uri &uri);
 
     private:
       void parse(const std::string &uri);
@@ -125,7 +125,7 @@ namespace loopp
       std::string password_;
       QueryParams query_parameters_;
     };
-  }
-}
+  } // namespace http
+} // namespace loopp
 
 #endif // LOOPP_HTTP_URI_HPP

@@ -35,8 +35,8 @@ namespace loopp
     {
     public:
       Request(const std::string &method, const std::string &uri)
-        :  method_(method),
-           uri_(uri)
+        : method_(method)
+        , uri_(uri)
       {
       }
 
@@ -118,7 +118,7 @@ namespace loopp
         return headers_;
       }
 
-      friend std::ostream& operator<< (std::ostream& stream, const Request &request);
+      friend std::ostream &operator<<(std::ostream &stream, const Request &request);
 
     private:
       std::string method_;
@@ -127,7 +127,7 @@ namespace loopp
       Headers headers_;
       std::string content_;
     };
-  }
-}
+  } // namespace http
+} // namespace loopp
 
 #endif // LOOPP_HTTP_REQUEST_HPP

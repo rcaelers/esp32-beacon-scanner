@@ -23,7 +23,7 @@
 #include "loopp/core/ScopedLock.hpp"
 
 #include <system_error>
- #include <cstring>
+#include <cstring>
 
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
@@ -34,8 +34,8 @@ using namespace loopp;
 using namespace loopp::core;
 
 Trigger::Trigger()
-  : pipe_read(-1),
-    pipe_write(-1)
+  : pipe_read(-1)
+  , pipe_write(-1)
 {
   init_pipe();
 }
@@ -56,34 +56,41 @@ void
 Trigger::init_pipe()
 {
   pipe_read = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-  if (pipe_read < 0) throw std::runtime_error("socket");
+  if (pipe_read < 0)
+    throw std::runtime_error("socket");
 
   pipe_write = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-  if (pipe_write < 0) throw std::runtime_error("socket");
+  if (pipe_write < 0)
+    throw std::runtime_error("socket");
 
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_port = htons (0);
+  addr.sin_port = htons(0);
   addr.sin_addr.s_addr = htonl(0x7f000001);
   socklen_t addr_len = sizeof(addr);
 
   int rc = bind(pipe_read, (struct sockaddr *)&addr, addr_len);
-  if (rc < 0) throw std::runtime_error("bind");
+  if (rc < 0)
+    throw std::runtime_error("bind");
 
   rc = getsockname(pipe_read, (struct sockaddr *)&addr, &addr_len);
-  if (rc < 0) throw std::runtime_error("getsockname");
+  if (rc < 0)
+    throw std::runtime_error("getsockname");
 
   addr.sin_addr.s_addr = htonl(0x7f000001);
   rc = connect(pipe_write, (struct sockaddr *)&addr, addr_len);
-  if (rc < 0) throw std::runtime_error("connect");
+  if (rc < 0)
+    throw std::runtime_error("connect");
 
   rc = getsockname(pipe_write, (struct sockaddr *)&addr, &addr_len);
-  if (rc < 0) throw std::runtime_error("getsockname");
+  if (rc < 0)
+    throw std::runtime_error("getsockname");
 
   addr.sin_addr.s_addr = htonl(0x7f000001);
   rc = connect(pipe_read, (struct sockaddr *)&addr, addr_len);
-  if (rc < 0) throw std::runtime_error("connect");
+  if (rc < 0)
+    throw std::runtime_error("connect");
 
   int flags = fcntl(pipe_read, F_GETFL, 0);
   fcntl(pipe_read, F_SETFL, flags | O_NONBLOCK);
@@ -97,11 +104,11 @@ Trigger::signal()
   loopp::core::ScopedLock l(mutex);
   count++;
   if (count == 1)
-  {
-    uint8_t dummy = 0;
-    int written = write(pipe_write, &dummy, 1);
-    assert(written == 1 && "Failed to trigger");
-  }
+    {
+      uint8_t dummy = 0;
+      int written = write(pipe_write, &dummy, 1);
+      assert(written == 1 && "Failed to trigger");
+    }
 }
 
 int
@@ -110,11 +117,11 @@ Trigger::confirm()
   loopp::core::ScopedLock l(mutex);
   int ret = count;
   if (count > 0)
-  {
-    uint8_t dummy;
-    int written = read(pipe_read, &dummy, 1);
-    assert(written == 1 && "Failed to confirm trigger");
-  }
+    {
+      uint8_t dummy;
+      int written = read(pipe_read, &dummy, 1);
+      assert(written == 1 && "Failed to confirm trigger");
+    }
   count = 0;
   return ret;
 }
@@ -124,4 +131,3 @@ Trigger::get_poll_fd() const
 {
   return pipe_read;
 }
-

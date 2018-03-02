@@ -31,25 +31,25 @@ namespace loopp
   };
 
   template<typename C, typename R, typename... A>
-  struct remove_class<R(C::*)(A...)>
+  struct remove_class<R (C::*)(A...)>
   {
     using type = R(A...);
   };
 
   template<typename C, typename R, typename... A>
-  struct remove_class<R(C::*)(A...) const>
+  struct remove_class<R (C::*)(A...) const>
   {
     using type = R(A...);
   };
 
   template<typename C, typename R, typename... A>
-  struct remove_class<R(C::*)(A...) volatile>
+  struct remove_class<R (C::*)(A...) volatile>
   {
     using type = R(A...);
   };
 
   template<typename C, typename R, typename... A>
-  struct remove_class<R(C::*)(A...) const volatile>
+  struct remove_class<R (C::*)(A...) const volatile>
   {
     using type = R(A...);
   };
@@ -67,13 +67,13 @@ namespace loopp
   };
 
   template<typename R, typename... A>
-  struct get_signature_impl<R(&)(A...)>
+  struct get_signature_impl<R (&)(A...)>
   {
     using type = R(A...);
   };
 
   template<typename R, typename... A>
-  struct get_signature_impl<R(*)(A...)>
+  struct get_signature_impl<R (*)(A...)>
   {
     using type = R(A...);
   };
@@ -89,6 +89,6 @@ namespace loopp
   {
     return make_function_type<F>(std::forward<F>(f));
   }
-}
+} // namespace loopp
 
 #endif // LOOPP_LAMBDA_HPP

@@ -25,11 +25,11 @@
 using namespace loopp;
 using namespace loopp::core;
 
-Task::Task(const std::string &name, std::function<void ()> func, CoreId core_id, uint16_t stack_size, UBaseType_t priority)
-  : name(name),
-    func(func),
-    stack_size(stack_size),
-    priority(priority)
+Task::Task(const std::string &name, std::function<void()> func, CoreId core_id, uint16_t stack_size, UBaseType_t priority)
+  : name(name)
+  , func(func)
+  , stack_size(stack_size)
+  , priority(priority)
 {
   BaseType_t rc = pdPASS;
   if (core_id != CoreId::NoAffinity)
@@ -55,6 +55,6 @@ Task::~Task()
 void
 Task::run(void *self)
 {
-  static_cast<Task*>(self)->func();
+  static_cast<Task *>(self)->func();
   vTaskDelete(nullptr);
 }

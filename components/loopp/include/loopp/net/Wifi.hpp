@@ -42,8 +42,8 @@ namespace loopp
         return instance;
       }
 
-      Wifi(const Wifi&) = delete;
-      Wifi& operator=(const Wifi&) = delete;
+      Wifi(const Wifi &) = delete;
+      Wifi &operator=(const Wifi &) = delete;
 
       void set_host_name(const std::string &name);
       void set_ssid(const std::string &ssid);
@@ -72,8 +72,8 @@ namespace loopp
       std::string passphrase;
 
       loopp::core::Signal<void(system_event_t)> signal_system_event;
-      loopp::core::Property<bool> connected_property { false };
+      loopp::core::Property<bool> connected_property{ false };
     };
-  }
-}
+  } // namespace net
+} // namespace loopp
 #endif // LOOPP_WIFI_HPP

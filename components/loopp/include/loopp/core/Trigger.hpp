@@ -46,7 +46,7 @@ namespace loopp
       int pipe_write;
       int count;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_TRIGGER_HPP

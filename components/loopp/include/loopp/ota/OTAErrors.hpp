@@ -29,21 +29,23 @@ namespace loopp
   namespace ota
   {
     enum class OTAErrc
-      {
-        // no 0
-        Timeout = 1,
-        InternalError,
-        InvalidURI
-      };
+    {
+      // no 0
+      Timeout = 1,
+      InternalError,
+      InvalidURI
+    };
 
-  std::error_code make_error_code(OTAErrc);
-  }
-}
+    std::error_code make_error_code(OTAErrc);
+  } // namespace ota
+} // namespace loopp
 
 namespace std
 {
-  template <>
-  struct is_error_code_enum<loopp::ota::OTAErrc> : true_type {};
-}
+  template<>
+  struct is_error_code_enum<loopp::ota::OTAErrc> : true_type
+  {
+  };
+} // namespace std
 
 #endif // LOOPP_OTA_OTAERRORS_HPP

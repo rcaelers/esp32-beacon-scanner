@@ -53,13 +53,14 @@ namespace loopp
 {
   namespace http
   {
-    std::ostream& operator<< (std::ostream& stream, const Headers &headers)
+    std::ostream &operator<<(std::ostream &stream, const Headers &headers)
     {
       stream << boost::algorithm::join(headers.headers | boost::adaptors::transformed([](Headers::HeadersMap::value_type pv) {
-            return (boost::format("%1%=%2%") % pv.first % pv.second).str();
-          }), ",");
+                                         return (boost::format("%1%=%2%") % pv.first % pv.second).str();
+                                       }),
+                                       ",");
 
       return stream;
     }
-  }
-}
+  } // namespace http
+} // namespace loopp

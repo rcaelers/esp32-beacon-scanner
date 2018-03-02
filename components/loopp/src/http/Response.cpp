@@ -22,7 +22,8 @@
 
 #include <iostream>
 
-std::ostream& loopp::http::operator<< (std::ostream& stream, const Response &r)
+std::ostream &
+loopp::http::operator<<(std::ostream &stream, const Response &r)
 {
   stream << "[Response method = " << r.method() << " "
          << "code = " << r.status_code() << " "

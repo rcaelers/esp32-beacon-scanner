@@ -22,7 +22,8 @@
 
 #include <iostream>
 
-std::ostream& loopp::http::operator<< (std::ostream& stream, const Request &r)
+std::ostream &
+loopp::http::operator<<(std::ostream &stream, const Request &r)
 {
   stream << "[Request method = " << r.method() << " "
          << "URI = " << r.uri() << " "

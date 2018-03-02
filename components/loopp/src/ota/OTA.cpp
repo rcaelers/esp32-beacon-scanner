@@ -152,7 +152,7 @@ OTA::retrieve_body()
 
                                     std::size_t total = client->get_body_length();
                                     std::size_t left = client->get_body_length_left();
-                                    int done = ( 100 * (total - left)) / total;
+                                    int done = (100 * (total - left)) / total;
                                     ESP_LOGI(tag, "Progress: %d%%", done);
 
                                     retrieve_body();

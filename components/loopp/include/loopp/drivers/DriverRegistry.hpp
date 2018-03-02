@@ -46,18 +46,15 @@ namespace loopp
       {
       }
 
-      std::shared_ptr<loopp::core::MainLoop>
-      get_loop() const
+      std::shared_ptr<loopp::core::MainLoop> get_loop() const
       {
         return loop;
       }
-      std::shared_ptr<loopp::mqtt::MqttClient> const
-      get_mqtt()
+      std::shared_ptr<loopp::mqtt::MqttClient> const get_mqtt()
       {
         return mqtt;
       }
-      std::string
-      get_topic_root() const
+      std::string get_topic_root() const
       {
         return topic_root;
       }
@@ -78,15 +75,13 @@ namespace loopp
     class DriverRegistry
     {
     public:
-      static DriverRegistry &
-      instance()
+      static DriverRegistry &instance()
       {
         static DriverRegistry instance;
         return instance;
       }
 
-      void
-      register_driver(const std::string &name, IDriverFactory *factory)
+      void register_driver(const std::string &name, IDriverFactory *factory)
       {
         ESP_LOGI("REGISTRY", "Register %s", name.c_str());
         if (factories.find(name) == factories.end())
@@ -95,8 +90,7 @@ namespace loopp
           }
       }
 
-      std::shared_ptr<IDriver>
-      create(const std::string &name, DriverContext context, nlohmann::json config)
+      std::shared_ptr<IDriver> create(const std::string &name, DriverContext context, nlohmann::json config)
       {
         ESP_LOGI("REGISTRY", "Create %s", name.c_str());
         if (factories.find(name) != factories.end())
@@ -123,8 +117,7 @@ namespace loopp
         DriverRegistry::instance().register_driver(std::move(name), this);
       }
 
-      std::shared_ptr<IDriver>
-      create(DriverContext context, nlohmann::json config)
+      std::shared_ptr<IDriver> create(DriverContext context, nlohmann::json config)
       {
         ESP_LOGI("REGISTRY", "DriverFactory create");
         return std::make_shared<T>(context, config);

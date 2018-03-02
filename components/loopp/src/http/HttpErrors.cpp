@@ -24,11 +24,11 @@ namespace
 {
   struct HttpErrCategory : std::error_category
   {
-    const char* name() const noexcept override;
+    const char *name() const noexcept override;
     std::string message(int ev) const override;
   };
 
-  const char* HttpErrCategory::name() const noexcept
+  const char *HttpErrCategory::name() const noexcept
   {
     return "http";
   }
@@ -37,21 +37,21 @@ namespace
   {
     switch (static_cast<loopp::http::HttpErrc>(ev))
       {
-      case loopp::http::HttpErrc::Timeout:
-        return "network timeout";
-      case loopp::http::HttpErrc::InternalError:
-        return "internal error";
-      case loopp::http::HttpErrc::ProtocolError:
-        return "protocol error";
-      case loopp::http::HttpErrc::InvalidURI:
-        return "invalid URI";
-      default:
-        return "(unrecognized error)";
+        case loopp::http::HttpErrc::Timeout:
+          return "network timeout";
+        case loopp::http::HttpErrc::InternalError:
+          return "internal error";
+        case loopp::http::HttpErrc::ProtocolError:
+          return "protocol error";
+        case loopp::http::HttpErrc::InvalidURI:
+          return "invalid URI";
+        default:
+          return "(unrecognized error)";
       }
   }
 
-  const HttpErrCategory theHttpErrCategory {};
-}
+  const HttpErrCategory theHttpErrCategory{};
+} // namespace
 
 namespace loopp
 {
@@ -59,7 +59,7 @@ namespace loopp
   {
     std::error_code make_error_code(HttpErrc ec)
     {
-      return {static_cast<int>(ec), theHttpErrCategory};
+      return { static_cast<int>(ec), theHttpErrCategory };
     }
-  }
-}
+  } // namespace http
+} // namespace loopp

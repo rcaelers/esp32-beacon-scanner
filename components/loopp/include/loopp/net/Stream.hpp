@@ -62,8 +62,7 @@ namespace loopp
       virtual void socket_close() = 0;
       virtual void socket_on_connected(std::string host, connect_callback_t callback) = 0;
 
-      int
-      get_socket() const
+      int get_socket() const
       {
         return sock;
       }
@@ -94,14 +93,12 @@ namespace loopp
         {
         }
 
-        StreamBuffer &
-        buffer()
+        StreamBuffer &buffer()
         {
           return buffer_;
         }
 
-        void
-        call(std::error_code ec, std::size_t bytes_transferred)
+        void call(std::error_code ec, std::size_t bytes_transferred)
         {
           return callback_(ec, bytes_transferred);
         }

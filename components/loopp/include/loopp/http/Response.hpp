@@ -88,7 +88,7 @@ namespace loopp
         return headers_;
       }
 
-      friend std::ostream& operator<< (std::ostream& stream, const Response &response);
+      friend std::ostream &operator<<(std::ostream &stream, const Response &response);
 
     private:
       std::string method_;
@@ -97,7 +97,7 @@ namespace loopp
       std::string status_message_;
       Headers headers_;
     };
-  }
-}
+  } // namespace http
+} // namespace loopp
 
 #endif // LOOPP_HTTP_RESPONSE_HPP

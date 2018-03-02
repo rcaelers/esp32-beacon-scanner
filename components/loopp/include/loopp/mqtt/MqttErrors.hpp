@@ -28,22 +28,24 @@ namespace loopp
   namespace mqtt
   {
     enum class MqttErrc
-      {
-        // no 0
-        Timeout = 1,
-        InternalError,
-        ProtocolError,
-        NotConnected
-      };
+    {
+      // no 0
+      Timeout = 1,
+      InternalError,
+      ProtocolError,
+      NotConnected
+    };
 
     std::error_code make_error_code(MqttErrc);
-  }
-}
+  } // namespace mqtt
+} // namespace loopp
 
 namespace std
 {
-  template <>
-  struct is_error_code_enum<loopp::mqtt::MqttErrc> : true_type {};
-}
+  template<>
+  struct is_error_code_enum<loopp::mqtt::MqttErrc> : true_type
+  {
+  };
+} // namespace std
 
 #endif // LOOPP_MQTT_MQTTERRORS_HPP

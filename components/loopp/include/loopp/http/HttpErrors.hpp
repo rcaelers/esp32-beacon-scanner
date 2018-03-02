@@ -29,22 +29,24 @@ namespace loopp
   namespace http
   {
     enum class HttpErrc
-      {
-        // no 0
-        Timeout = 1,
-        InternalError,
-        ProtocolError,
-        InvalidURI
-      };
+    {
+      // no 0
+      Timeout = 1,
+      InternalError,
+      ProtocolError,
+      InvalidURI
+    };
 
-  std::error_code make_error_code(HttpErrc);
-  }
-}
+    std::error_code make_error_code(HttpErrc);
+  } // namespace http
+} // namespace loopp
 
 namespace std
 {
-  template <>
-  struct is_error_code_enum<loopp::http::HttpErrc> : true_type {};
-}
+  template<>
+  struct is_error_code_enum<loopp::http::HttpErrc> : true_type
+  {
+  };
+} // namespace std
 
 #endif // LOOPP_HTTP_HTTPERRORS_HPP

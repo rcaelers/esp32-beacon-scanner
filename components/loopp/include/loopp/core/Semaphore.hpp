@@ -48,11 +48,11 @@ namespace loopp
           }
       }
 
-      Semaphore(const Semaphore&) = default;
-      Semaphore& operator=(const Semaphore&) = default;
+      Semaphore(const Semaphore &) = default;
+      Semaphore &operator=(const Semaphore &) = default;
 
-      Semaphore(Semaphore &&lhs) :
-        semaphore_handle(lhs.semaphore_handle)
+      Semaphore(Semaphore &&lhs)
+        : semaphore_handle(lhs.semaphore_handle)
       {
         lhs.semaphore_handle = nullptr;
       }
@@ -93,7 +93,7 @@ namespace loopp
     private:
       SemaphoreHandle_t semaphore_handle;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_SEMAPHORE_HPP
