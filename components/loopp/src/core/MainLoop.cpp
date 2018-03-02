@@ -45,16 +45,10 @@ MainLoop::~MainLoop()
 }
 
 void
-MainLoop::post(std::function<void()> func)
-{
-  post(std::make_shared<loopp::core::FunctionClosure<void ()>>(func));
-}
-
-void
-MainLoop::post(std::shared_ptr<ClosureBase> closure)
+MainLoop::invoke_func(std::function<void()> func)
 {
   ScopedLock l(queue_mutex);
-  queue.push(closure);
+  queue.push(func);
   trigger.signal();
 }
 
@@ -119,11 +113,7 @@ MainLoop::cancel(int fd)
 MainLoop::poll_list_type::iterator
 MainLoop::find(int fd, IoType type)
 {
-  return std::find_if(poll_list.begin(), poll_list.end(),
-                      [fd, type](PollData pd)
-                      {
-                        return pd.fd == fd && pd.type == type;
-                      });
+  return std::find_if(poll_list.begin(), poll_list.end(), [fd, type](PollData pd) { return pd.fd == fd && pd.type == type; });
 }
 
 void
@@ -178,7 +168,6 @@ MainLoop::cancel(int fd, IoType type)
     }
 }
 
-
 MainLoop::timer_id
 MainLoop::add_timer(std::chrono::milliseconds duration, timer_callback callback)
 {
@@ -219,11 +208,7 @@ void
 MainLoop::cancel_timer(timer_id id)
 {
   ScopedLock l(timer_list_mutex);
-  auto iter =  std::find_if(timers.begin(), timers.end(),
-                            [id](TimerData t)
-                            {
-                              return t.id = id;
-                            });
+  auto iter = std::find_if(timers.begin(), timers.end(), [id](TimerData t) { return t.id = id; });
   if (iter != timers.end())
     {
       timers.erase(iter);
@@ -234,9 +219,7 @@ MainLoop::cancel_timer(timer_id id)
 MainLoop::timer_list_type::iterator
 MainLoop::get_first_expiring_timer()
 {
-  auto iter = std::min_element(timers.begin(), timers.end(), [](TimerData &a, TimerData &b) {
-      return a.expire_time < b.expire_time;
-    });
+  auto iter = std::min_element(timers.begin(), timers.end(), [](TimerData &a, TimerData &b) { return a.expire_time < b.expire_time; });
 
   return iter;
 }
@@ -284,12 +267,12 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
         {
           switch (pd.type)
             {
-            case IoType::Read:
-              FD_SET(pd.fd, &read_set);
-              break;
-            case IoType::Write:
-              FD_SET(pd.fd, &write_set);
-              break;
+              case IoType::Read:
+                FD_SET(pd.fd, &read_set);
+                break;
+              case IoType::Write:
+                FD_SET(pd.fd, &write_set);
+                break;
             }
         }
     }
@@ -297,8 +280,8 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
   int r = 0;
 
 #if DEBUG_SELECT
-  hexdump(tag, "IN r: ", reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
-  hexdump(tag, "IN w: ", reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
+  hexdump(tag, "IN r: ", reinterpret_cast<uint8_t *>(&read_set), sizeof(read_set));
+  hexdump(tag, "IN w: ", reinterpret_cast<uint8_t *>(&write_set), sizeof(write_set));
 #endif
 
   if (timeout != std::chrono::milliseconds::max())
@@ -318,8 +301,8 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
 
 #if DEBUG_SELECT
   ESP_LOGD(tag, "Select ret = %d:", r);
-  hexdump(tag, "OUT r: ", reinterpret_cast<uint8_t*>(&read_set), sizeof(read_set));
-  hexdump(tag, "OUT w: ", reinterpret_cast<uint8_t*>(&write_set), sizeof(write_set));
+  hexdump(tag, "OUT r: ", reinterpret_cast<uint8_t *>(&read_set), sizeof(read_set));
+  hexdump(tag, "OUT w: ", reinterpret_cast<uint8_t *>(&write_set), sizeof(write_set));
 #endif
 
   return r;
@@ -345,7 +328,7 @@ MainLoop::run()
 
       if (r == -1)
         {
-          const char* error = strerror(errno);
+          const char *error = strerror(errno);
           ESP_LOGE(tag, "Error during select: %s", error);
         }
       else if (r == 0)
@@ -374,8 +357,7 @@ MainLoop::handle_timeout(poll_list_type &poll_list_copy)
 
   for (auto &pd : poll_list_copy)
     {
-      if (pd.timeout_duration != std::chrono::milliseconds::max() &&
-          now > pd.start_time + pd.timeout_duration)
+      if (pd.timeout_duration != std::chrono::milliseconds::max() && now > pd.start_time + pd.timeout_duration)
         {
           unnotify(pd.fd, pd.type);
           try
@@ -384,13 +366,18 @@ MainLoop::handle_timeout(poll_list_type &poll_list_copy)
             }
           catch (const std::system_error &ex)
             {
-              ESP_LOGE(tag, "System error while handling timeout %d/%d %d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.code().value(), ex.what());
+              ESP_LOGE(tag,
+                       "System error while handling timeout %d/%d %d %s",
+                       pd.fd,
+                       static_cast<std::underlying_type<IoType>::type>(pd.type),
+                       ex.code().value(),
+                       ex.what());
             }
           catch (const std::exception &ex)
             {
               ESP_LOGE(tag, "Exception while handling timeout %d/%d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.what());
             }
-          catch(...)
+          catch (...)
             {
               ESP_LOGE(tag, "Exception while handling timeout %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
             }
@@ -404,9 +391,7 @@ MainLoop::handle_io(poll_list_type &poll_list_copy)
   std::error_code ec;
   for (auto &pd : poll_list_copy)
     {
-      if ( (pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) ||
-           (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)) ||
-           pd.cancelled)
+      if ((pd.type == IoType::Read && FD_ISSET(pd.fd, &read_set)) || (pd.type == IoType::Write && FD_ISSET(pd.fd, &write_set)) || pd.cancelled)
         {
           unnotify(pd.fd, pd.type);
           try
@@ -419,19 +404,23 @@ MainLoop::handle_io(poll_list_type &poll_list_copy)
             }
           catch (const std::system_error &ex)
             {
-              ESP_LOGE(tag, "System error while handling %d/%d %d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.code().value(), ex.what());
+              ESP_LOGE(tag,
+                       "System error while handling %d/%d %d %s",
+                       pd.fd,
+                       static_cast<std::underlying_type<IoType>::type>(pd.type),
+                       ex.code().value(),
+                       ex.what());
             }
           catch (const std::exception &ex)
             {
               ESP_LOGE(tag, "Exception while handling %d/%d %s", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type), ex.what());
             }
-          catch(...)
+          catch (...)
             {
               ESP_LOGE(tag, "Exception while handling %d/%d", pd.fd, static_cast<std::underlying_type<IoType>::type>(pd.type));
             }
         }
     }
-
 }
 
 void
@@ -475,27 +464,27 @@ MainLoop::handle_queue()
   }
 
   for (int i = 0; i < size; i++)
-  {
-    nonstd::optional<std::shared_ptr<loopp::core::ClosureBase>> obj(queue.pop_for(std::chrono::milliseconds(0)));
-    if (obj)
     {
-      std::shared_ptr<loopp::core::ClosureBase> closure = *obj;
-      try
-      {
-        closure->operator()();
-      }
-      catch (const std::system_error &ex)
-      {
-        ESP_LOGE(tag, "System error while handling invoked function%d %s", ex.code().value(), ex.what());
-      }
-      catch (const std::exception &ex)
-      {
-        ESP_LOGE(tag, "Exception while handling invoked function: %s", ex.what());
-      }
-      catch(...)
-      {
-        ESP_LOGE(tag, "Exception while handling invoked function");
-      }
+      nonstd::optional<deferred_func> obj(queue.pop_for(std::chrono::milliseconds(0)));
+      if (obj)
+        {
+          deferred_func func = *obj;
+          try
+            {
+              func();
+            }
+          catch (const std::system_error &ex)
+            {
+              ESP_LOGE(tag, "System error while handling invoked function%d %s", ex.code().value(), ex.what());
+            }
+          catch (const std::exception &ex)
+            {
+              ESP_LOGE(tag, "Exception while handling invoked function: %s", ex.what());
+            }
+          catch (...)
+            {
+              ESP_LOGE(tag, "Exception while handling invoked function");
+            }
+        }
     }
-  }
 }

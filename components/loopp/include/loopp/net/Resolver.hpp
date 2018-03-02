@@ -31,7 +31,6 @@
 
 #include "loopp/core/Task.hpp"
 #include "loopp/core/Queue.hpp"
-#include "loopp/core/Slot.hpp"
 
 namespace loopp
 {
@@ -40,10 +39,10 @@ namespace loopp
     class Resolver
     {
     public:
-      using resolved_slot_type = loopp::core::Slot<void (std::error_code ec, struct addrinfo *addr_list)>;
+      using resolved_callback_type = std::function<void (std::error_code ec, struct addrinfo *addr_list)>;
 
       static Resolver &instance();
-      void resolve_async(std::string host, std::string port, resolved_slot_type slot);
+      void resolve_async(std::string host, std::string port, resolved_callback_type callback);
 
     private:
       Resolver();
@@ -55,15 +54,15 @@ namespace loopp
       struct ResolveJob
       {
       public:
-        ResolveJob(std::string host, std::string port, resolved_slot_type slot)
+        ResolveJob(std::string host, std::string port, resolved_callback_type callback)
           : host(std::move(host)),
             port(std::move(port)),
-            slot(std::move(slot))
+            callback(std::move(callback))
         {
         }
         std::string host;
         std::string port;
-        resolved_slot_type slot;
+        resolved_callback_type callback;
       };
 
       loopp::core::Queue<ResolveJob> queue;

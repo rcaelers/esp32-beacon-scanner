@@ -66,14 +66,8 @@ HttpClient::set_ca_certificate(const char *cert)
 void
 HttpClient::execute(Request request, request_complete_callback_t callback)
 {
-  execute(request, loopp::core::make_slot(loop, callback));
-}
-
-void
-HttpClient::execute(Request request, request_complete_slot_t slot)
-{
   this->request = std::move(request);
-  this->complete_slot = std::move(slot);
+  this->complete_callback = std::move(callback);
 
   try
     {
@@ -116,23 +110,17 @@ HttpClient::execute(Request request, request_complete_slot_t slot)
 void
 HttpClient::read_body_async(std::size_t size, body_callback_t callback)
 {
-  read_body_async(size, loopp::core::make_slot(loop, callback));
-}
-
-void
-HttpClient::read_body_async(std::size_t size, body_slot_t slot)
-{
   std::size_t bytes_to_read = std::min<std::size_t>(body_length_left, std::max<int>(0, size - response_buffer.consume_size()));
 
   if (bytes_to_read > 0)
     {
       auto self = shared_from_this();
       sock->read_async(response_buffer, bytes_to_read,
-                       [this, self, slot](std::error_code ec, std::size_t bytes_transferred) {
+                       [this, self, callback](std::error_code ec, std::size_t bytes_transferred) {
                          if (!ec)
                            {
                              this->body_length_left -= bytes_transferred;
-                             slot.call(ec, &response_buffer);
+                             callback(ec, &response_buffer);
                            }
                          else
                            {
@@ -142,7 +130,7 @@ HttpClient::read_body_async(std::size_t size, body_slot_t slot)
     }
   else
     {
-      slot.call(std::error_code(), &response_buffer);
+      callback(std::error_code(), &response_buffer);
     }
 }
 
@@ -253,7 +241,7 @@ HttpClient::handle_response()
   parse_status_line(response_stream);
   parse_headers(response_stream);
 
-  complete_slot.call(std::error_code(), response);
+  complete_callback(std::error_code(), response);
 }
 
 void
@@ -319,6 +307,6 @@ HttpClient::handle_error(std::string what, std::error_code ec)
       ESP_LOGE(tag, "HTTP Error: %s %s", what.c_str(), ec.message().c_str());
       sock->close();
       sock.reset();
-      complete_slot.call(ec, response);
+      complete_callback(ec, response);
     }
 }

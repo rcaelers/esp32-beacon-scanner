@@ -41,7 +41,7 @@ namespace loopp
       virtual int socket_read(uint8_t *buffer, std::size_t count);
       virtual int socket_write(uint8_t *buffer, std::size_t count);
       virtual void socket_close();
-      virtual void socket_on_connected(std::string host, connect_slot_t slot);
+      virtual void socket_on_connected(std::string host, connect_callback_t callback);
     };
   }
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Rob Caelers <rob.caelers@gmail.com>
+// Copyright (C) 2017, 2018 Rob Caelers <rob.caelers@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-#include "loopp/core/Closure.hpp"
 #include "loopp/core/Queue.hpp"
 #include "loopp/core/Trigger.hpp"
 #include "loopp/core/ThreadLocal.hpp"
@@ -47,21 +46,25 @@ namespace loopp
     {
     public:
       using io_callback = std::function<void(std::error_code ec)>;
+      using deferred_func = std::function<void()>;
       using timer_callback = std::function<void()>;
       using timer_id = int;
 
       MainLoop() = default;
       ~MainLoop();
 
-      MainLoop(const MainLoop&) = delete;
-      MainLoop &operator=(const MainLoop&) = delete;
-      MainLoop(MainLoop&&) = delete;
-      MainLoop &operator=(MainLoop&&) = delete;
+      MainLoop(const MainLoop &) = delete;
+      MainLoop &operator=(const MainLoop &) = delete;
+      MainLoop(MainLoop &&) = delete;
+      MainLoop &operator=(MainLoop &&) = delete;
 
       static std::shared_ptr<MainLoop> current();
 
-      void post(std::function<void()> func);
-      void post(std::shared_ptr<ClosureBase> closure);
+      template<typename F, typename... Args>
+      void invoke(F fn, Args &&... args)
+      {
+        invoke_func(std::bind(fn, std::forward<Args>(args)...));
+      }
 
       void notify_read(int fd, io_callback read_cb, std::chrono::milliseconds timeout_duration = std::chrono::milliseconds::max());
       void notify_write(int fd, io_callback write_cb, std::chrono::milliseconds timeout_duration = std::chrono::milliseconds::max());
@@ -78,7 +81,11 @@ namespace loopp
       void cancel_timer(timer_id id);
 
     private:
-      enum class IoType { Read, Write };
+      enum class IoType
+      {
+        Read,
+        Write
+      };
       struct PollData
       {
         int fd;
@@ -111,6 +118,7 @@ namespace loopp
       void handle_io(poll_list_type &poll_list_copy);
       void handle_queue();
       void handle_timers();
+      void invoke_func(deferred_func func);
 
       static ThreadLocal<std::shared_ptr<MainLoop>> &get_thread_local();
 
@@ -120,14 +128,31 @@ namespace loopp
       mutable loopp::core::Mutex poll_list_mutex;
       poll_list_type poll_list;
       mutable loopp::core::Mutex queue_mutex;
-      loopp::core::Queue<std::shared_ptr<loopp::core::ClosureBase>> queue;
+      loopp::core::Queue<deferred_func> queue;
       loopp::core::Trigger trigger;
       bool terminate_loop = false;
       timer_id next_timer_id = 1;
       mutable loopp::core::Mutex timer_list_mutex;
       timer_list_type timers;
     };
-  }
-}
+
+    template<typename F>
+    auto bind_loop(std::shared_ptr<MainLoop> loop, F f)
+    {
+      auto ret = [f, loop](auto &&... args) {
+        if (loop)
+          {
+            loop->invoke(f, std::forward<decltype(args)>(args)...);
+          }
+        else
+          {
+            f(std::forward<decltype(args)>(args)...);
+          }
+      };
+      return ret;
+    }
+
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_MAINLOOP_HPP

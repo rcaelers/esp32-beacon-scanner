@@ -44,10 +44,10 @@ Resolver::Resolver()
 }
 
 void
-Resolver::resolve_async(std::string host, std::string port, resolved_slot_type slot)
+Resolver::resolve_async(std::string host, std::string port, resolved_callback_type callback)
 {
   ESP_LOGD(tag, "Resolving %s:%s", host.c_str(), port.c_str());
-  queue.emplace(std::move(host), std::move(port), std::move(slot));
+  queue.emplace(std::move(host), std::move(port), std::move(callback));
 }
 
 void
@@ -73,7 +73,7 @@ Resolver::resolve_task()
               ec = NetworkErrc::NameResolutionFailed;
             }
 
-          resolve_job->slot.call(ec, addr_list);
+          resolve_job->callback(ec, addr_list);
         }
     }
 }

@@ -22,8 +22,8 @@
 #define LOOPP_CORE_SIGNAL_HPP
 
 #include <list>
+#include <functional>
 
-#include "loopp/core/Slot.hpp"
 #include "loopp/core/Mutex.hpp"
 #include "loopp/core/ScopedLock.hpp"
 
@@ -31,24 +31,25 @@ namespace loopp
 {
   namespace core
   {
-    template <class T>
+    template<class T>
     class Signal;
 
     template<class... Args>
     class Signal<void(Args...)>
     {
     public:
-      using slot_type = loopp::core::Slot<void(Args...)>;
+      using callback_type = std::function<void(Args...)>;
+      using slot_list_type = std::list<callback_type>;
 
       Signal() = default;
       ~Signal() = default;
 
-      Signal(const Signal&) = delete;
-      Signal& operator=(const Signal&) = delete;
+      Signal(const Signal &) = delete;
+      Signal &operator=(const Signal &) = delete;
 
       Signal(Signal &&lhs)
-        : mutex(std::move(lhs.mutex)),
-          slots(std::move(lhs.slots))
+        : mutex(std::move(lhs.mutex))
+        , slots(std::move(lhs.slots))
       {
       }
 
@@ -62,22 +63,10 @@ namespace loopp
         return *this;
       }
 
-      void connect(const slot_type &slot)
+      void connect(const callback_type callback)
       {
         ScopedLock l(mutex);
-        slots.push_back(slot);
-      }
-
-      void connect(slot_type &&slot)
-      {
-        ScopedLock l(mutex);
-        slots.push_back(std::move(slot));
-      }
-
-      template <class... SlotArgs>
-      void connect(SlotArgs&&... args)
-      {
-        slots.emplace_back(std::forward<SlotArgs>(args)...);
+        slots.push_back(callback);
       }
 
       void operator()(const Args &... args)
@@ -85,15 +74,15 @@ namespace loopp
         ScopedLock l(mutex);
         for (auto &slot : slots)
           {
-            slot.call(args...);
+            slot(args...);
           }
       }
 
     private:
       mutable loopp::core::Mutex mutex;
-      std::list<slot_type> slots;
+      slot_list_type slots;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_SIGNAL_HPP

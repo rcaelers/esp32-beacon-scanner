@@ -50,7 +50,6 @@ namespace loopp
     public:
       using subscribe_function_t = void(std::string topic, std::string payload);
       using subscribe_callback_t = std::function<subscribe_function_t>;
-      using subscribe_slot_t = loopp::core::Slot<subscribe_function_t>;
 
       MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string client_id, std::string host, int port);
       ~MqttClient();
@@ -59,7 +58,6 @@ namespace loopp
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
       void set_callback(subscribe_callback_t callback);
-      void set_callback(subscribe_slot_t slot);
       void set_client_id(std::string client_id);
       void set_username(std::string username);
       void set_password(std::string username);
@@ -73,7 +71,6 @@ namespace loopp
       void unsubscribe(std::string topic);
 
       void add_filter(std::string filter, subscribe_callback_t callback);
-      void add_filter(std::string filter, subscribe_slot_t slot);
       void remove_filter(std::string filter);
 
       loopp::core::Property<bool> &connected();
@@ -127,11 +124,11 @@ namespace loopp
       uint8_t fixed_header = 0;;
       loopp::core::MainLoop::timer_id ping_timer = 0;
       int packet_id = 0;
-      subscribe_slot_t subscribe_slot;
+      subscribe_callback_t subscribe_callback;
       loopp::core::Property<bool> connected_property { false };
       int pending_ping_count = 0;
       std::list<std::string> subscriptions;
-      std::map<std::string, subscribe_slot_t> filters;
+      std::map<std::string, subscribe_callback_t> filters;
 
       static constexpr int ping_interval_sec = 15;
       static constexpr int keep_alive_sec = 60;

@@ -164,7 +164,7 @@ TLSStream::socket_close()
 }
 
 void
-TLSStream::socket_on_connected(std::string host, connect_slot_t slot)
+TLSStream::socket_on_connected(std::string host, connect_callback_t callback)
 {
   ESP_LOGD(tag, "Connected. Starting handshake");
 
@@ -198,16 +198,16 @@ TLSStream::socket_on_connected(std::string host, connect_slot_t slot)
       ret = mbedtls_ssl_setup(&ssl, &config);
       throw_if_failure("mbedtls_ssl_setup", ret);
 
-      on_handshake(slot);
+      on_handshake(callback);
     }
   catch (const std::system_error &ex)
     {
-      slot.call(ex.code());
+      callback(ex.code());
     }
 }
 
 void
-TLSStream::on_handshake(connect_slot_t slot)
+TLSStream::on_handshake(connect_callback_t callback)
 {
   try
     {
@@ -222,27 +222,27 @@ TLSStream::on_handshake(connect_slot_t slot)
           break;
 
         case MBEDTLS_ERR_SSL_WANT_READ:
-          loop->notify_read(server_fd.fd, [this, self, slot](std::error_code ec) {
+          loop->notify_read(server_fd.fd, [this, self, callback](std::error_code ec) {
             if (!ec)
               {
-                on_handshake(slot);
+                on_handshake(callback);
               }
             else
               {
-                slot.call(ec);
+                callback(ec);
               }
           });
           break;
 
         case MBEDTLS_ERR_SSL_WANT_WRITE:
-          loop->notify_write(server_fd.fd, [this, self, slot](std::error_code ec) {
+          loop->notify_write(server_fd.fd, [this, self, callback](std::error_code ec) {
             if (!ec)
               {
-                on_handshake(slot);
+                on_handshake(callback);
               }
             else
               {
-                slot.call(ec);
+                callback(ec);
               }
           });
           break;
@@ -270,12 +270,12 @@ TLSStream::on_handshake(connect_slot_t slot)
             }
 
           connected_property.set(true);
-          slot.call(std::error_code());
+          callback(std::error_code());
         }
     }
   catch (const std::system_error &ex)
     {
-      slot.call(ex.code());
+      callback(ex.code());
     }
 }
 

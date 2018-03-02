@@ -39,11 +39,9 @@ namespace loopp
     public:
       using request_complete_function_t = void(std::error_code, Response);
       using request_complete_callback_t = std::function<request_complete_function_t>;
-      using request_complete_slot_t = loopp::core::Slot<request_complete_function_t>;
 
       using body_function_t = void(std::error_code, loopp::net::StreamBuffer *buffer);
       using body_callback_t = std::function<body_function_t>;
-      using body_slot_t = loopp::core::Slot<body_function_t>;
 
       HttpClient(std::shared_ptr<loopp::core::MainLoop> loop);
       ~HttpClient() = default;
@@ -51,9 +49,7 @@ namespace loopp
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
       void execute(Request request, request_complete_callback_t callback);
-      void execute(Request request, request_complete_slot_t slot);
       void read_body_async(std::size_t size, body_callback_t callback);
-      void read_body_async(std::size_t size, body_slot_t slot);
 
       std::size_t get_body_length() const { return body_length; }
       std::size_t get_body_length_left() const { return body_length_left; }
@@ -73,7 +69,7 @@ namespace loopp
       std::shared_ptr<loopp::net::Stream> sock;
       loopp::http::Request request;
       loopp::http::Response response;
-      request_complete_slot_t complete_slot;
+      request_complete_callback_t complete_callback;
 
       bool keep_alive = false;
       std::size_t body_length = 0;

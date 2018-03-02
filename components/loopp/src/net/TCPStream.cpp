@@ -66,8 +66,8 @@ TCPStream::socket_close()
 }
 
 void
-TCPStream::socket_on_connected(std::string host, connect_slot_t slot)
+TCPStream::socket_on_connected(std::string host, connect_callback_t callback)
 {
   connected_property.set(true);
-  slot.call(std::error_code());
+  callback(std::error_code());
 }

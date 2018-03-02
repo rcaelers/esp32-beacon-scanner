@@ -38,7 +38,6 @@ namespace loopp
     public:
       using ota_result_function_t = void(std::error_code);
       using ota_result_callback_t = std::function<ota_result_function_t>;
-      using ota_result_slot_t = loopp::core::Slot<ota_result_function_t>;
 
       OTA(std::shared_ptr<loopp::core::MainLoop> loop);
       ~OTA() = default;
@@ -49,7 +48,6 @@ namespace loopp
       void set_ca_certificate(const char *cert);
 
       void upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_callback_t callback);
-      void upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_slot_t slot);
       void commit();
 
     private:
@@ -61,7 +59,7 @@ namespace loopp
       std::shared_ptr<loopp::core::MainLoop> loop;
       std::shared_ptr<loopp::http::HttpClient> client;
 
-      ota_result_slot_t slot;
+      ota_result_callback_t callback;
 
       esp_ota_handle_t update_handle = 0;
       const esp_partition_t *update_partition = NULL;

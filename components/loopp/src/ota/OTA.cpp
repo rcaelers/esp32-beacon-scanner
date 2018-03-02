@@ -71,15 +71,9 @@ OTA::check()
 void
 OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_callback_t callback)
 {
-  upgrade_async(url, timeout_duration, loopp::core::make_slot(loop, callback));
-}
-
-void
-OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_slot_t slot)
-{
   try
     {
-      this->slot = slot;
+      this->callback = callback;
 
       if (timeout_duration != std::chrono::seconds(0))
         {
@@ -106,7 +100,7 @@ OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_r
   catch (const std::system_error &ex)
     {
       ESP_LOGD(tag, "upgrade_async exception %d %s", ex.code().value(), ex.what());
-      slot.call(ex.code());
+      callback(ex.code());
     }
 }
 
@@ -118,7 +112,7 @@ OTA::on_http_response(std::error_code ec, loopp::http::Response response)
       ESP_LOGI(tag, "Status %03d: %s", response.status_code(), response.status_message().c_str());
       if (response.status_code() != 200)
         {
-          this->slot.call(OTAErrc::InternalError);
+          this->callback(OTAErrc::InternalError);
         }
       else
         {
@@ -129,7 +123,7 @@ OTA::on_http_response(std::error_code ec, loopp::http::Response response)
   else
     {
       ESP_LOGE(tag, "Failed to request firmware");
-      this->slot.call(ec);
+      this->callback(ec);
     }
 }
 
@@ -137,7 +131,7 @@ void
 OTA::retrieve_body()
 {
   auto self = shared_from_this();
-  client->read_body_async(2048, loopp::core::make_slot(loop, [this, self](std::error_code ec, loopp::net::StreamBuffer *buffer) {
+  client->read_body_async(2048, loopp::core::bind_loop(loop, [this, self](std::error_code ec, loopp::net::StreamBuffer *buffer) {
                             try
                               {
                                 if (ec)
@@ -166,13 +160,13 @@ OTA::retrieve_body()
                                 else
                                   {
                                     ESP_LOGD(tag, "OTA ready");
-                                    slot.call(std::error_code());
+                                    callback(std::error_code());
                                   }
                               }
                             catch (const std::system_error &ex)
                               {
                                 ESP_LOGE(tag, "upgrade_async exception %d %s", ex.code().value(), ex.what());
-                                slot.call(ex.code());
+                                callback(ex.code());
                               }
                           }));
 }

@@ -172,7 +172,7 @@ MqttClient::publish(std::string topic, std::string payload, PublishOptions optio
     }
 
   auto self = shared_from_this();
-  loop->post([this, self, topic, payload, options] () {
+  loop->invoke([this, self, topic, payload, options] () {
       send_publish(topic, payload, options);
     });
 }
@@ -185,7 +185,7 @@ MqttClient::subscribe(std::string topic)
   if (connected_property.get())
     {
       auto self = shared_from_this();
-      loop->post([this, self, topic] () {
+      loop->invoke([this, self, topic] () {
           std::list<std::string> topics;
           topics.push_back(topic);
           send_subscribe(topics);
@@ -201,7 +201,7 @@ MqttClient::unsubscribe(std::string topic)
   if (connected_property.get())
     {
       auto self = shared_from_this();
-      loop->post([this, self, topic] () {
+      loop->invoke([this, self, topic] () {
           std::list<std::string> topics;
           topics.push_back(topic);
           send_unsubscribe(topics);
@@ -212,13 +212,7 @@ MqttClient::unsubscribe(std::string topic)
 void
 MqttClient::set_callback(subscribe_callback_t callback)
 {
-  set_callback(loopp::core::make_slot(loop, callback));
-}
-
-void
-MqttClient::set_callback(subscribe_slot_t slot)
-{
-  subscribe_slot = std::move(slot);
+  subscribe_callback = std::move(callback);
 }
 
 void
@@ -625,13 +619,13 @@ MqttClient::handle_publish()
         {
           if (match_topic(topic, kv.first))
             {
-              kv.second.call(topic, payload);
+              kv.second(topic, payload);
               matched = true;
             }
         }
       if (!matched)
         {
-          subscribe_slot.call(topic, payload);
+          subscribe_callback(topic, payload);
         }
     }
   catch (std::system_error &e)
@@ -839,13 +833,7 @@ MqttClient::match_topic(std::string topic, std::string filter)
 void
 MqttClient::add_filter(std::string filter, subscribe_callback_t callback)
 {
-  filters[filter] = loopp::core::make_slot(loop, callback);
-}
-
-void
-MqttClient::add_filter(std::string filter, subscribe_slot_t slot)
-{
-  filters[filter] = std::move(slot);
+  filters[filter] = std::move(callback);
 }
 
 void

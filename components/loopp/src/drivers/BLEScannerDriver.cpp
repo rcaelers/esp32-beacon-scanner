@@ -118,7 +118,7 @@ void
 BLEScannerDriver::start()
 {
   auto self = shared_from_this();
-  ble_scanner.scan_result_signal().connect(loop, [this, self](loopp::ble::BLEScanner::ScanResult scan_result) { on_ble_scanner_scan_result(scan_result); });
+  ble_scanner.scan_result_signal().connect(loopp::core::bind_loop(loop, [this, self](loopp::ble::BLEScanner::ScanResult scan_result) { on_ble_scanner_scan_result(scan_result); }));
   scan_timer = loop->add_periodic_timer(std::chrono::milliseconds(1000), [this, self]() { on_scan_timer(); });
   ble_scanner.start();
 }

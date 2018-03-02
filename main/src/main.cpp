@@ -20,10 +20,11 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
+#include <functional>
 
 #include "loopp/ble/BLEScanner.hpp"
 #include "loopp/core/MainLoop.hpp"
-#include "loopp/core/Slot.hpp"
 #include "loopp/core/Task.hpp"
 #include "loopp/drivers/DriverRegistry.hpp"
 #include "loopp/mqtt/MqttClient.hpp"
@@ -97,6 +98,11 @@ public:
     topic_configuration = topic_root + "configuration";
   }
 
+  Main(const Main &other) = delete;
+  Main(Main &&other) = delete;
+  Main &operator=(const Main &other) = delete;
+  Main &operator=(Main &&other) = delete;
+
 private:
   void
   on_wifi_system_event(system_event_t event)
@@ -134,8 +140,8 @@ private:
         mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
         mqtt->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
 #endif
-        mqtt->set_callback(loopp::core::make_slot(loop, [this](std::string topic, std::string payload) { on_mqtt_data(topic, payload); }));
-        mqtt->connected().connect(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1));
+        mqtt->set_callback(loopp::core::bind_loop(loop, [this](std::string topic, std::string payload) { on_mqtt_data(topic, payload); }));
+        mqtt->connected().connect(loopp::core::bind_loop(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1)));
         mqtt->connect();
       }
     else
@@ -153,11 +159,11 @@ private:
         ESP_LOGI(tag, "-> Subscribing to configuration at %s", topic_configuration.c_str());
         mqtt->subscribe(topic_configuration);
         mqtt->add_filter(topic_configuration,
-                         loopp::core::make_slot(loop, [this](std::string topic, std::string payload) { on_provisioning(payload); }));
+                         loopp::core::bind_loop(loop, [this](std::string topic, std::string payload) { on_provisioning(payload); }));
         ESP_LOGI(tag, "-> Subscribing to remote commands at %s", topic_command.c_str());
         mqtt->subscribe(topic_command);
         mqtt->add_filter(topic_command,
-                         loopp::core::make_slot(loop, [this](std::string topic, std::string payload) { on_remote_command(payload); }));
+                         loopp::core::bind_loop(loop, [this](std::string topic, std::string payload) { on_remote_command(payload); }));
 
 #ifdef ENABLE_DEFAULT_BLE_SCANNER
         std::string name = "ble-scanner";
@@ -316,7 +322,7 @@ private:
       ota->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
 #endif
 
-      ota->upgrade_async(url, std::chrono::seconds(60), loopp::core::make_slot(loop, [this, ota](std::error_code ec) {
+      ota->upgrade_async(url, std::chrono::seconds(60), loopp::core::bind_loop(loop, [this, ota](std::error_code ec) {
                            ESP_LOGI(tag, "-> OTA ready");
                            if (!ec)
                              {
@@ -338,8 +344,8 @@ private:
     wifi.set_passphase(WIFI_PASS);
     wifi.set_host_name("scan");
     wifi.set_auto_connect(true);
-    wifi.system_event_signal().connect(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1));
-    wifi.connected().connect(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1));
+    wifi.system_event_signal().connect(loopp::core::bind_loop(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1)));
+    wifi.connected().connect(loopp::core::bind_loop(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1)));
 
     wifi_timeout_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
     wifi.connect();

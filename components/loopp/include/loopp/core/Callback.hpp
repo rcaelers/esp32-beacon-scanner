@@ -21,7 +21,6 @@
 #ifndef LOOPP_CORE_CALLBACK_HPP
 #define LOOPP_CORE_CALLBACK_HPP
 
-#include "loopp/Slot.hpp"
 #include "loopp/Mutex.hpp"
 #include "loopp/ScopedLock.hpp"
 
@@ -31,47 +30,34 @@ namespace loopp
 {
   namespace core
   {
-    template <class T>
+    template<class T>
     class Callback;
 
     template<class... Args>
     class Callback<void(Args...)>
     {
     public:
-      using slot_type = loopp::core::Slot<void(Args...)>;
+      using callback_type = std::function<void(Args...)>;
 
       Callback() = default;
       ~Callback() = default;
 
-      Callback(const Callback&) = delete;
-      Callback& operator=(const Callback&) = delete;
+      Callback(const Callback &) = delete;
+      Callback &operator=(const Callback &) = delete;
 
-      Callback(Callback &&lhs)
-        : mutex(std::move(lhs.mutex)),
-          callback(std::move(lhs.callback))
-      {
-      }
+      Callback(Callback &&lhs) = default;
+      Callback &operator=(Callback &&lhs) = default;
 
-      Callback &operator=(Callback &&lhs)
-      {
-        if (this != &lhs)
-          {
-            mutex = std::move(lhs.mutex);
-            callback = std::move(lhs.callback);
-          }
-        return *this;
-      }
-
-      void set(const slot_type &slot)
+      void set(const callback_type &callback)
       {
         ScopedLock l(mutex);
-        callback = slot;
+        this->callback = callback;
       }
 
-      void set(slot_type &&slot)
+      void set(callback_type &&callback)
       {
         ScopedLock l(mutex);
-        callback.emplace(std::move(slot));
+        callback.emplace(std::move(callback));
       }
 
       void unset()
@@ -91,9 +77,9 @@ namespace loopp
 
     private:
       mutable loopp::core::Mutex mutex;
-      nonstd::optional<slot_type> callback;
+      nonstd::optional<callback_type> callback;
     };
-  }
-}
+  } // namespace core
+} // namespace loopp
 
 #endif // LOOPP_CORE_CALLBACK_HPP

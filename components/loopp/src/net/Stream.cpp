@@ -47,10 +47,10 @@ static const char tag[] = "NET";
 using namespace loopp;
 using namespace loopp::net;
 
-Stream::Stream(std::shared_ptr<loopp::core::MainLoop> loop) :
-    sock(-1),
-    loop(loop),
-    resolver(Resolver::instance())
+Stream::Stream(std::shared_ptr<loopp::core::MainLoop> loop)
+  : sock(-1)
+  , loop(loop)
+  , resolver(Resolver::instance())
 {
 }
 
@@ -66,40 +66,38 @@ Stream::~Stream()
 void
 Stream::connect(std::string host, int port, connect_callback_t callback)
 {
-  connect(std::move(host), port, loopp::core::make_slot(loop, callback));
-}
-
-void
-Stream::connect(std::string host, int port, connect_slot_t slot)
-{
   ESP_LOGI(tag, "Connecting to %s:%s", host.c_str(), std::to_string(port).c_str());
   auto self = shared_from_this();
-  resolver.resolve_async(host, std::to_string(port), loopp::core::make_slot(loop, [this, self, host, slot] (std::error_code ec, struct addrinfo *addr_list) {
-        if (!ec)
-          {
-            on_resolved(host, addr_list, slot);
-          }
-        else
-          {
-            slot.call(ec);
-          }
 
-        if (addr_list != NULL)
-          {
-            freeaddrinfo(addr_list);
-          }
-      }));
+  auto l = [this, self, host, callback](std::error_code ec, struct addrinfo *addr_list) {
+    if (!ec)
+      {
+        on_resolved(host, addr_list, callback);
+      }
+    else
+      {
+        callback(ec);
+      }
+
+    if (addr_list != NULL)
+      {
+        freeaddrinfo(addr_list);
+      }
+  };
+  auto x = loopp::core::bind_loop(loop, l);
+
+  resolver.resolve_async(host, std::to_string(port), x);
 }
 
 void
-Stream::on_resolved(std::string host, struct addrinfo *addr_list, connect_slot_t slot)
+Stream::on_resolved(std::string host, struct addrinfo *addr_list, connect_callback_t callback)
 {
   try
     {
       struct addrinfo *addr = nullptr;
 
       // TODO: try next one on failure.
-      for (struct addrinfo *cur = addr_list; cur != nullptr &&  addr == nullptr; cur = cur->ai_next)
+      for (struct addrinfo *cur = addr_list; cur != nullptr && addr == nullptr; cur = cur->ai_next)
         {
           if (cur->ai_family == AF_INET || cur->ai_family == AF_INET6)
             {
@@ -118,7 +116,7 @@ Stream::on_resolved(std::string host, struct addrinfo *addr_list, connect_slot_t
           throw std::system_error(NetworkErrc::InternalError, "Could not create socket");
         }
 
-      int ret = fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK );
+      int ret = fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
       if (ret < 0)
         {
           throw std::system_error(NetworkErrc::InternalError, "Could not set non-blocking");
@@ -136,75 +134,58 @@ Stream::on_resolved(std::string host, struct addrinfo *addr_list, connect_slot_t
         }
 
       auto self = shared_from_this();
-      loop->notify_write(sock, [this, self, host, slot](std::error_code ec) {
-          if (!ec)
-            {
-              socket_on_connected(host, slot);
-            }
-          else
-            {
-              slot.call(ec);
-            }
-        },
-        // TODO: make configurable
-        std::chrono::milliseconds(5000));
+      loop->notify_write(sock,
+                         [this, self, host, callback](std::error_code ec) {
+                           if (!ec)
+                             {
+                               socket_on_connected(host, callback);
+                             }
+                           else
+                             {
+                               callback(ec);
+                             }
+                         },
+                         // TODO: make configurable
+                         std::chrono::milliseconds(5000));
     }
   catch (const std::system_error &ex)
     {
       ESP_LOGD(tag, "connect exception %d %s", ex.code().value(), ex.what());
-      slot.call(ex.code());
+      callback(ex.code());
     }
 }
 
 void
 Stream::write_async(StreamBuffer &buffer, io_callback_t callback)
 {
-  write_async(buffer, loopp::core::make_slot(loop, callback));
-}
-
-void
-Stream::write_async(StreamBuffer &buffer, io_slot_t slot)
-{
   if (!connected_property.get())
-  {
-    slot.call(NetworkErrc::ConnectionClosed, 0);
-  }
+    {
+      callback(NetworkErrc::ConnectionClosed, 0);
+    }
   else
-  {
-    auto self = shared_from_this();
+    {
+      auto self = shared_from_this();
 
-    loop->post([this, self, &buffer, slot] () {
-        write_op_queue.emplace_back(buffer, slot);
+      loop->invoke([this, self, &buffer, callback]() {
+        write_op_queue.emplace_back(buffer, callback);
         if (write_op_queue.size() == 1)
-        {
-          do_write_async();
-        }
+          {
+            do_write_async();
+          }
       });
-  }
+    }
 }
 
 void
 Stream::read_async(StreamBuffer &buffer, std::size_t count, io_callback_t callback)
 {
-  read_async(buffer, count, loopp::core::make_slot(loop, callback));
-}
-
-void
-Stream::read_async(StreamBuffer &buffer, std::size_t count, io_slot_t slot)
-{
-  do_read_async(buffer, count, 0, slot);
+  do_read_async(buffer, count, 0, callback);
 }
 
 void
 Stream::read_until_async(StreamBuffer &buffer, std::string until, io_callback_t callback)
 {
-  read_until_async(buffer, until, loopp::core::make_slot(loop, callback));
-}
-
-void
-Stream::read_until_async(StreamBuffer &buffer, std::string until, io_slot_t slot)
-{
-  do_read_until_async(buffer, until, 0, slot);
+  do_read_until_async(buffer, until, 0, callback);
 }
 
 void
@@ -242,34 +223,34 @@ void
 Stream::do_wait_write_async()
 {
   if (write_op_queue.size() > 0)
-  {
-    auto self = shared_from_this();
-    loop->notify_write(sock, [this, self](std::error_code ec) {
+    {
+      auto self = shared_from_this();
+      loop->notify_write(sock, [this, self](std::error_code ec) {
         if (!ec)
-        {
-          do_write_async();
-        }
+          {
+            do_write_async();
+          }
         else
-        {
-          auto &write_op = write_op_queue.front();
-          write_op.call(ec, 0);
-          write_op_queue.pop_front();
-          do_wait_write_async();
-        }
+          {
+            auto &write_op = write_op_queue.front();
+            write_op.call(ec, 0);
+            write_op_queue.pop_front();
+            do_wait_write_async();
+          }
       });
-  }
+    }
 }
 
 void
-Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, io_slot_t slot)
+Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, io_callback_t callback)
 {
   auto self = shared_from_this();
   std::error_code ec;
 
   if (!connected_property.get())
-  {
-    ec = NetworkErrc::ConnectionClosed;
-  }
+    {
+      ec = NetworkErrc::ConnectionClosed;
+    }
 
   while (!ec && (bytes_transferred < count))
     {
@@ -290,16 +271,16 @@ Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_tr
         }
       else if (ret == -EAGAIN)
         {
-          loop->notify_read(sock, [this, self, &buf, bytes_transferred, count, slot](std::error_code ec) {
-              if (!ec)
-                {
-                  do_read_async(buf, count, bytes_transferred, slot);
-                }
-              else
-                {
-                  slot.call(ec, bytes_transferred);
-                }
-            });
+          loop->notify_read(sock, [this, self, &buf, bytes_transferred, count, callback](std::error_code ec) {
+            if (!ec)
+              {
+                do_read_async(buf, count, bytes_transferred, callback);
+              }
+            else
+              {
+                callback(ec, bytes_transferred);
+              }
+          });
           return;
         }
       else
@@ -308,9 +289,8 @@ Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_tr
         }
     }
 
-  slot.call(ec, bytes_transferred);
+  callback(ec, bytes_transferred);
 }
-
 
 bool
 Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match)
@@ -318,7 +298,7 @@ Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match
   char *data = buf.consume_data() + start_pos;
   char *data_end = buf.consume_data() + buf.consume_size() - match.size();
 
-  for ( ; data <= data_end; data++)
+  for (; data <= data_end; data++)
     {
       int m = memcmp(data, match.c_str(), match.size());
       if (m == 0)
@@ -335,20 +315,20 @@ Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match
 }
 
 void
-Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t bytes_transferred, io_slot_t slot)
+Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t bytes_transferred, io_callback_t callback)
 {
   auto self = shared_from_this();
   std::error_code ec;
 
   if (!connected_property.get())
-  {
-    ec = NetworkErrc::ConnectionClosed;
-  }
+    {
+      ec = NetworkErrc::ConnectionClosed;
+    }
 
   std::size_t start_pos = 0;
   while (!ec && !match_until(buf, start_pos, until))
     {
-      std::size_t left_to_read = 512; // TODO: 
+      std::size_t left_to_read = 512; // TODO:
       uint8_t *data = reinterpret_cast<uint8_t *>(buf.produce_data(left_to_read));
       int ret = socket_read(data, left_to_read);
 
@@ -365,16 +345,16 @@ Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t by
         }
       else if (ret == -EAGAIN)
         {
-          loop->notify_read(sock, [this, self, &buf, bytes_transferred, until, slot](std::error_code ec) {
-              if (!ec)
-                {
-                  do_read_until_async(buf, until, bytes_transferred, slot);
-                }
-              else
-                {
-                  slot.call(ec, bytes_transferred);
-                }
-            });
+          loop->notify_read(sock, [this, self, &buf, bytes_transferred, until, callback](std::error_code ec) {
+            if (!ec)
+              {
+                do_read_until_async(buf, until, bytes_transferred, callback);
+              }
+            else
+              {
+                callback(ec, bytes_transferred);
+              }
+          });
           return;
         }
       else
@@ -383,7 +363,7 @@ Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t by
         }
     }
 
-  slot.call(ec, bytes_transferred);
+  callback(ec, bytes_transferred);
 }
 
 void
@@ -394,11 +374,11 @@ Stream::close()
       connected_property.set(false);
 
       auto self = shared_from_this();
-      loop->post([this, self] () {
-          socket_close();
-          loop->cancel(sock);
-          sock = -1;
-        });
+      loop->invoke([this, self]() {
+        socket_close();
+        loop->cancel(sock);
+        sock = -1;
+      });
     }
 }
 
