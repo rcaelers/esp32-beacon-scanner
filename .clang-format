@@ -19,7 +19,7 @@ BreakConstructorInitializers: BeforeComma
 BreakConstructorInitializersBeforeComma: false
 ConstructorInitializerIndentWidth: 2
 
-AlwaysBreakAfterReturnType: AllDefinitions
+AlwaysBreakAfterReturnType: TopLevelDefinitions
 AlignAfterOpenBracket: Align
 
 BinPackArguments: false
