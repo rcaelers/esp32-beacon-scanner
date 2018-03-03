@@ -219,9 +219,7 @@ MainLoop::cancel_timer(timer_id id)
 MainLoop::timer_list_type::iterator
 MainLoop::get_first_expiring_timer()
 {
-  auto iter = std::min_element(timers.begin(), timers.end(), [](TimerData &a, TimerData &b) { return a.expire_time < b.expire_time; });
-
-  return iter;
+  return std::min_element(timers.begin(), timers.end(), [](TimerData &a, TimerData &b) { return a.expire_time < b.expire_time; });
 }
 
 std::chrono::milliseconds
