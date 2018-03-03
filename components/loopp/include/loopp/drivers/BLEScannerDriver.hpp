@@ -59,6 +59,7 @@ namespace loopp
       loopp::core::MainLoop::timer_id scan_timer = 0;
       std::list<loopp::ble::BLEScanner::ScanResult> scan_results;
       std::string topic_scan;
+      loopp::core::ScopedConnection scan_result_signal_connection;
 
       const static gpio_num_t LED_GPIO = GPIO_NUM_5;
     };
