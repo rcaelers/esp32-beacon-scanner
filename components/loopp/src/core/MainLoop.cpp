@@ -208,7 +208,7 @@ void
 MainLoop::cancel_timer(timer_id id)
 {
   ScopedLock l(timer_list_mutex);
-  auto iter = std::find_if(timers.begin(), timers.end(), [id](TimerData t) { return t.id = id; });
+  auto iter = std::find_if(timers.begin(), timers.end(), [id](const TimerData &t) { return t.id == id; });
   if (iter != timers.end())
     {
       timers.erase(iter);
