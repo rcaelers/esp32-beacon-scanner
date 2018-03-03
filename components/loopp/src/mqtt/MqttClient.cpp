@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cstring>
 
+#include "boost/format.hpp"
+
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 
@@ -532,7 +534,7 @@ MqttClient::handle_payload()
         break;
 
       default:
-        verify("invalid payload type", 0, 0, MqttErrc::ProtocolError);
+        verify((boost::format("invalid payload type: %1%") % ((int)packet_type)).str().c_str(), 0, 0, MqttErrc::ProtocolError);
     }
 
   buffer.consume_commit(remaining_length);
