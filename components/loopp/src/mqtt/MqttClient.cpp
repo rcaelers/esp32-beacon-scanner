@@ -483,7 +483,6 @@ MqttClient::async_read_payload()
     if (!ec)
       {
         handle_payload();
-        buffer.consume_commit(remaining_length);
       }
   });
 }
@@ -535,6 +534,8 @@ MqttClient::handle_payload()
       default:
         verify("invalid payload type", 0, 0, MqttErrc::ProtocolError);
     }
+
+  buffer.consume_commit(remaining_length);
 
   if (!ec)
     {
