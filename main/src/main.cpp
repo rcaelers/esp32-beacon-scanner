@@ -32,6 +32,7 @@
 #include "loopp/ota/OTA.hpp"
 #include "loopp/utils/hexdump.hpp"
 #include "loopp/utils/json.hpp"
+#include "loopp/utils/memlog.hpp"
 
 #include "string.h"
 
@@ -63,23 +64,6 @@ extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
 extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 #endif
 
-void
-memlog(const char *msg)
-{
-  static int last = -1;
-
-  int heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
-
-  if (last != -1)
-    {
-      ESP_LOGI(tag, "%s: %d (delta %d)", msg, heap, last - heap);
-    }
-  else
-    {
-      ESP_LOGI(tag, "%s: %d", msg, heap);
-    }
-  last = heap;
-}
 
 class Main
 {
@@ -330,6 +314,7 @@ private:
 
   void main_task()
   {
+    loopp::utils::memlog("main_task");
     wifi.set_ssid(WIFI_SSID);
     wifi.set_passphase(WIFI_PASS);
     wifi.set_host_name("scan");
@@ -343,6 +328,7 @@ private:
     ESP_LOGI(tag, "Main::main_task memory free %d", heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
+    loopp::utils::memlog("running loop");
     loop->run();
   }
 
@@ -373,6 +359,7 @@ app_main()
   ESP_LOGI(tag, "HEAP: startup");
   heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
+  loopp::utils::memlog("app_main");
   new Main();
 
   while (1)

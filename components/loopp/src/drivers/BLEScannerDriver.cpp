@@ -28,6 +28,7 @@
 #include "driver/gpio.h"
 
 #include "loopp/drivers/DriverRegistry.hpp"
+#include "loopp/utils/memlog.hpp"
 
 using namespace loopp::drivers;
 
@@ -96,6 +97,7 @@ BLEScannerDriver::on_scan_timer()
 {
   json j;
 
+  loopp::utils::memlog("BLEScannerDriver::on_scan_timer");
   if (mqtt && mqtt->connected().get())
     {
       for (auto r : scan_results)
