@@ -82,7 +82,7 @@ public:
     std::string client_id = std::string(CONFIG_MQTT_CLIENTID_PREFIX) + mac;
 
     loop = std::make_shared<loopp::core::MainLoop>();
-    mqtt = std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", CONFIG_MQTT_HOST, CONFIG_MQTT_PORT);
+    mqtt = std::make_shared<loopp::mqtt::MqttClient>(loop, client_id, CONFIG_MQTT_HOST, CONFIG_MQTT_PORT);
     task = std::make_shared<loopp::core::Task>("main_task", std::bind(&Main::main_task, this));
   }
 
