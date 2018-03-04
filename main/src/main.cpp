@@ -103,7 +103,15 @@ private:
     wifi_timeout_timer = 0;
     if (!wifi.connected().get())
       {
-        ESP_LOGI(tag, "-> Wifi failed to connect in time. Reset");
+        wifi_fail_count++;
+
+        if (wifi_fail_count == 3)
+          {
+            ESP_LOGI(tag, "-> Wifi failed to connect in time. Reset");
+            esp_restart();
+          }
+
+        ESP_LOGI(tag, "-> Wifi failed to connect in time. Retry");
         wifi.reconnect();
         wifi_timeout_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
       }
@@ -114,6 +122,8 @@ private:
     if (connected)
       {
         ESP_LOGI(tag, "-> Wifi connected");
+        wifi_fail_count = 0;
+
         loop->cancel_timer(wifi_timeout_timer);
         mqtt->set_username(CONFIG_MQTT_USER);
         mqtt->set_password(CONFIG_MQTT_PASSWORD);
@@ -348,6 +358,7 @@ private:
   std::shared_ptr<loopp::core::Task> task;
   std::map<std::string, std::shared_ptr<loopp::drivers::IDriver>> drivers;
   loopp::core::MainLoop::timer_id wifi_timeout_timer = 0;
+  int wifi_fail_count = 0;
   std::string topic_root;
   std::string topic_command;
   std::string topic_configuration;
