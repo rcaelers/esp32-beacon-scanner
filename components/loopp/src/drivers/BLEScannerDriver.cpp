@@ -43,13 +43,18 @@ BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, nlohma
   , mqtt(context.get_mqtt())
   , ble_scanner(loopp::ble::BLEScanner::instance())
 {
-#if TODO
-  gpio_pad_select_gpio(LED_GPIO);
-  gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
-#endif
-
   topic_scan = context.get_topic_root() + "scan";
   ESP_LOGD(tag, "BLEScannerDriver");
+
+  auto it = config.find("feedback_pin");
+  if (it != config.end())
+    {
+      pin_no = static_cast<gpio_num_t>(*it);
+      feedback = true;
+
+      gpio_pad_select_gpio(pin_no);
+      gpio_set_direction(pin_no, GPIO_MODE_OUTPUT);
+    }
 }
 
 BLEScannerDriver::~BLEScannerDriver()
@@ -88,11 +93,12 @@ BLEScannerDriver::base64_encode(const std::string &in)
 void
 BLEScannerDriver::on_ble_scanner_scan_result(loopp::ble::BLEScanner::ScanResult result)
 {
-#if TODO
-  static int led_state = 0;
-  led_state ^= 1;
-  gpio_set_level(LED_GPIO, led_state);
-#endif
+  if (feedback)
+    {
+      static int led_state = 0;
+      led_state ^= 1;
+      gpio_set_level(pin_no, led_state);
+    }
   scan_results.push_back(result);
 }
 

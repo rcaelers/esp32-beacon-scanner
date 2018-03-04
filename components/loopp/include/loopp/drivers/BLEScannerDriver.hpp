@@ -61,7 +61,8 @@ namespace loopp
       std::string topic_scan;
       loopp::core::ScopedConnection scan_result_signal_connection;
 
-      const static gpio_num_t LED_GPIO = GPIO_NUM_5;
+      gpio_num_t pin_no;
+      bool feedback = false;
     };
 
   } // namespace drivers
