@@ -40,8 +40,6 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-#include "user_config.h"
-
 // TODO: driver should be registered by the driver itself.
 // However, the linker will eliminate unreferenced symbols from static libraries.
 #include "loopp/drivers/BLEScannerDriver.hpp"
@@ -55,15 +53,18 @@ using json = nlohmann::json;
 
 static const char tag[] = "BEACON-SCANNER";
 
-#ifdef MQTT_USE_TLS
+#ifdef CONFIG_EMBEDDED_CERTIFICATES
+#ifdef CONFIG_CA_CERTIFICATE
 extern const uint8_t ca_start[] asm("_binary_CA_crt_start");
 extern const uint8_t ca_end[] asm("_binary_CA_crt_end");
+#endif
+#ifdef CONFIG_CLIENT_CERTIFICATES
 extern const uint8_t certificate_start[] asm("_binary_esp32_crt_start");
 extern const uint8_t certificate_end[] asm("_binary_esp32_crt_end");
 extern const uint8_t private_key_start[] asm("_binary_esp32_key_start");
 extern const uint8_t private_key_end[] asm("_binary_esp32_key_end");
 #endif
-
+#endif
 
 class Main
 {
@@ -71,15 +72,18 @@ public:
   Main()
     : ble_scanner(loopp::ble::BLEScanner::instance())
     , wifi(loopp::net::Wifi::instance())
-    , loop(std::make_shared<loopp::core::MainLoop>())
-    , mqtt(std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", MQTT_HOST, MQTT_PORT))
-    , task(std::make_shared<loopp::core::Task>("main_task", std::bind(&Main::main_task, this)))
   {
 
     std::string mac = wifi.get_mac();
-    topic_root = std::string(MQTT_TOPIC_PREFIX) + "/" + mac + "/";
+    topic_root = std::string(CONFIG_MQTT_TOPIC_PREFIX) + "/" + mac + "/";
     topic_command = topic_root + "command";
     topic_configuration = topic_root + "configuration";
+
+    std::string client_id = std::string(CONFIG_MQTT_CLIENTID_PREFIX) + mac;
+
+    loop = std::make_shared<loopp::core::MainLoop>();
+    mqtt = std::make_shared<loopp::mqtt::MqttClient>(loop, "BLEScanner", CONFIG_MQTT_HOST, CONFIG_MQTT_PORT);
+    task = std::make_shared<loopp::core::Task>("main_task", std::bind(&Main::main_task, this));
   }
 
   Main(const Main &other) = delete;
@@ -111,15 +115,18 @@ private:
       {
         ESP_LOGI(tag, "-> Wifi connected");
         loop->cancel_timer(wifi_timeout_timer);
-#ifdef MQTT_USER
-        mqtt->set_username(MQTT_USER);
-#endif
-#ifdef MQTT_PASS
-        mqtt->set_password(MQTT_PASS);
-#endif
-#ifdef MQTT_USE_TLS
-        mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+        mqtt->set_username(CONFIG_MQTT_USER);
+        mqtt->set_password(CONFIG_MQTT_PASSWORD);
+
+#ifdef CONFIG_MQTT_TLS
+#ifdef CONFIG_EMBEDDED_CERTIFICATES
+#ifdef CONFIG_CA_CERTIFICATE
         mqtt->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
+#endif
+#ifdef CONFIG_CLIENT_CERTIFICATES
+        mqtt->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+#endif
+#endif
 #endif
         mqtt->set_callback(loopp::core::bind_loop(loop, [this](std::string topic, std::string payload) { on_mqtt_data(topic, payload); }));
         mqtt->connected().connect(loopp::core::bind_loop(loop, std::bind(&Main::on_mqtt_connected, this, std::placeholders::_1)));
@@ -145,7 +152,7 @@ private:
         mqtt->add_filter(topic_command,
                          loopp::core::bind_loop(loop, [this](std::string topic, std::string payload) { on_remote_command(payload); }));
 
-#ifdef ENABLE_DEFAULT_BLE_SCANNER
+#ifdef CONFIG_DEFAULT_BLE_SCANNER
         std::string name = "ble-scanner";
         loopp::drivers::DriverContext context(loop, mqtt, topic_root);
         json config;
@@ -292,11 +299,14 @@ private:
     loop->add_timer(std::chrono::milliseconds(1000), [this, url]() {
       std::shared_ptr<loopp::ota::OTA> ota = std::make_shared<loopp::ota::OTA>(loop);
 
-#ifdef MQTT_USE_TLS
-      ota->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+#ifdef CONFIG_EMBEDDED_CERTIFICATES
+#ifdef CONFIG_CA_CERTIFICATE
       ota->set_ca_certificate(reinterpret_cast<const char *>(ca_start));
 #endif
-
+#ifdef CONFIG_CLIENT_CERTIFICATES
+      ota->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
+#endif
+#endif
       ota->upgrade_async(url, std::chrono::seconds(60), loopp::core::bind_loop(loop, [this, ota](std::error_code ec) {
                            ESP_LOGI(tag, "-> OTA ready");
                            if (!ec)
@@ -315,13 +325,12 @@ private:
   void main_task()
   {
     loopp::utils::memlog("main_task");
-    wifi.set_ssid(WIFI_SSID);
-    wifi.set_passphase(WIFI_PASS);
+    wifi.set_ssid(CONFIG_WIFI_SSID);
+    wifi.set_passphase(CONFIG_WIFI_PASSWORD);
     wifi.set_host_name("scan");
     wifi.set_auto_connect(true);
     wifi.system_event_signal().connect(loopp::core::bind_loop(loop, std::bind(&Main::on_wifi_system_event, this, std::placeholders::_1)));
     wifi.connected().connect(loopp::core::bind_loop(loop, std::bind(&Main::on_wifi_connected, this, std::placeholders::_1)));
-
     wifi_timeout_timer = loop->add_timer(std::chrono::milliseconds(5000), std::bind(&Main::on_wifi_timeout, this));
     wifi.connect();
 

@@ -1,0 +1,94 @@
+menu "Beacon Scanner"
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "myssid"
+    help
+        SSID (network name) to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "mypassword"
+    help
+        WiFi password (WPA or WPA2) to use.
+
+config MQTT_HOST
+    string "MQTT host name"
+    default ""
+    help
+        Name of the host running the MQTT server.
+
+config MQTT_PORT
+    int "MQTT Port"
+    default 8883
+    range 0 65535
+    help
+        Port number used by the MQTT server.
+
+config MQTT_USER
+    string "MQTT username"
+    default ""
+    help
+        Username to use when connecting to the MQTT server.
+        NOTE: Configuring MQTT username may not be required if client certificates are used and the MQTT server takes the username from the certificate.
+
+config MQTT_PASSWORD
+    string "MQTT password"
+    default ""
+    help
+        Password to use when connecting to the MQTT server.
+        NOTE: Configuring MQTT password not be required if client certificates are used and the MQTT server takes the username from the certificate.
+
+config MQTT_TOPIC_PREFIX
+    string "MQTT topic prefix to use"
+    default "esp"
+    help
+        This beacon scanner will use '<topic-prefix>/<mac-address>' as prefix for the MQTT topic.
+
+config MQTT_CLIENTID_PREFIX
+    string "Client ID prefix to use"
+    default "beaconscanner"
+    help
+        This beacon scanner will use '<clientid-prefix><mac-address>' as client ID for the MQTT connection.
+
+config MQTT_TLS
+    bool "Connect to MQTT server using TLS"
+    default "n"
+    select CA_CERTIFICATE
+    help
+        If defined, the main/certs directory should contain 'CA.crt'.
+        This file should contain be the certiticate of Certification Authoritiy that signed the MQTT server's certificates.
+
+config CA_CERTIFICATE
+    bool "Use CA certificate to verify TLS connection to MQTT/HTTP server"
+    default "n"
+    select EMBEDDED_CERTIFICATES
+    help
+        If defined, the main/certs directory should contain 'CA.crt'.
+        This file should contain be the certiticate of Certification Authoritiy that signed the MQTT server's certificates.
+
+config CLIENT_CERTIFICATES
+    bool "Use client certificates when connecting to MQTT/HTTP server"
+    default "n"
+    select EMBEDDED_CERTIFICATES
+    help
+        Connect to the MQTT server using client certificates.
+        If defined, the main/certs directory should contain the files 'esp32.crt' and 'esp32.key'.
+        These files should contain the client certiticate and key of the MQTT user.
+
+        NOTE: Configuring MQTT username and password may not be required if the MQTT server takes the username from the certificate.
+
+config EMBEDDED_CERTIFICATES
+    bool "Embed certificates into app"
+    default y if ( CA_CERTIFICATE || CLIENT_CERTIFICATES )
+    default n if !( CA_CERTIFICATE || CLIENT_CERTIFICATES )
+
+config DEFAULT_BLE_SCANNER
+    bool "Always start BLE scanner"
+    default "y"
+    help
+        If enabled, the BLE scanner will always be started after boot.
+        If disabled, this beacon scanner will wait for a configuration profile on topic '<topic-prefix>/<mac-address>/configuration'.
+        This profile will indicate what tasks the beacon scanner must perform.
+
+endmenu

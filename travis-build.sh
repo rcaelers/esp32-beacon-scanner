@@ -17,7 +17,17 @@ fi
 
 cd ../..
 
-cp main/user_config.h.example main/user_config.h
+cat > sdkconfig <<EOF
+CONFIG_MQTT_USER=""
+CONFIG_MQTT_PASSWORD=""
+CONFIG_MQTT_TOPIC_PREFIX="esp"
+CONFIG_MQTT_CLIENTID_PREFIX="beaconscanner"
+CONFIG_MQTT_TLS=y
+CONFIG_CA_CERTIFICATE=y
+CONFIG_CLIENT_CERTIFICATES=y
+CONFIG_EMBEDDED_CERTIFICATES=y
+CONFIG_DEFAULT_BLE_SCANNER=y
+EOF
 
 make defconfig
 make all
