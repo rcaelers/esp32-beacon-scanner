@@ -60,6 +60,11 @@ namespace loopp
       BLEScanner(const BLEScanner&) = delete;
       BLEScanner& operator=(const BLEScanner&) = delete;
 
+      enum class ScanType { Active, Passive };
+
+      void set_scan_type(ScanType type);
+      void set_scan_interval(uint16_t interval);
+      void set_scan_window(uint16_t window);
       void start();
       void stop();
 
@@ -82,8 +87,9 @@ namespace loopp
       loopp::core::Signal<void(ScanResult)> signal_scan_result;
 
       mutable loopp::core::Mutex mutex;
+      esp_ble_scan_params_t ble_scan_params;
 
-      const static int scan_duration = 10;
+      const static int scan_duration = 30;
     };
   }
 }

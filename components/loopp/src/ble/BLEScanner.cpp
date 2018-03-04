@@ -38,14 +38,6 @@ static const char tag[] = "BLE";
 using namespace loopp;
 using namespace loopp::ble;
 
-static esp_ble_scan_params_t ble_scan_params = {
-  .scan_type = BLE_SCAN_TYPE_PASSIVE,
-  .own_addr_type = BLE_ADDR_TYPE_PUBLIC,
-  .scan_filter_policy = BLE_SCAN_FILTER_ALLOW_ALL,
-  .scan_interval = 0x50,
-  .scan_window = 0x30,
-};
-
 BLEScanner::BLEScanner()
 {
   init();
@@ -127,7 +119,12 @@ BLEScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 void
 BLEScanner::init()
 {
-  ESP_LOGI(tag, "BLEScanner::init");
+  ble_scan_params.scan_type = BLE_SCAN_TYPE_PASSIVE;
+  ble_scan_params.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
+  ble_scan_params.scan_filter_policy = BLE_SCAN_FILTER_ALLOW_ALL;
+  ble_scan_params.scan_interval = 0x50;
+  ble_scan_params.scan_window = 0x30;
+
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 
   esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
@@ -144,6 +141,24 @@ BLEScanner::deinit()
   esp_bluedroid_deinit();
   esp_bt_controller_disable();
   esp_bt_controller_deinit();
+}
+
+void
+BLEScanner::set_scan_type(ScanType type)
+{
+  ble_scan_params.scan_type = (type == ScanType::Active) ? BLE_SCAN_TYPE_ACTIVE : BLE_SCAN_TYPE_PASSIVE;
+}
+
+void
+BLEScanner::set_scan_interval(uint16_t interval)
+{
+  ble_scan_params.scan_interval = interval;
+}
+
+void
+BLEScanner::set_scan_window(uint16_t window)
+{
+  ble_scan_params.scan_window = window;
 }
 
 void

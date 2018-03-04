@@ -55,6 +55,39 @@ BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, nlohma
       gpio_pad_select_gpio(pin_no);
       gpio_set_direction(pin_no, GPIO_MODE_OUTPUT);
     }
+
+  it = config.find("scan_type");
+  if (it != config.end())
+    {
+      std::string type = *it;
+
+      if (type == "active")
+        {
+          ble_scanner.set_scan_type(loopp::ble::BLEScanner::ScanType::Active);
+        }
+      else if (type == "passive")
+        {
+          ble_scanner.set_scan_type(loopp::ble::BLEScanner::ScanType::Passive);
+        }
+      else
+        {
+          throw std::runtime_error("invalid scan_type value: " + type);
+        }
+    }
+
+  it = config.find("scan_interval");
+  if (it != config.end())
+    {
+      uint16_t interval = *it;
+      ble_scanner.set_scan_interval(interval);
+    }
+
+  it = config.find("scan_window");
+  if (it != config.end())
+    {
+      uint16_t window = *it;
+      ble_scanner.set_scan_window(window);
+    }
 }
 
 BLEScannerDriver::~BLEScannerDriver()
