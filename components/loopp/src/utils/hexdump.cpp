@@ -38,16 +38,16 @@ namespace loopp
     void hexdump(const char *tag, const char *prefix, const uint8_t *data, std::size_t size)
     {
 
-      int num_lines = (size + 15) / 16;
-      int index = 0;
+      unsigned int num_lines = (size + 15) / 16;
+      unsigned int index = 0;
 
-      for (int line = 0; line < num_lines; line++)
+      for (unsigned int line = 0; line < num_lines; line++)
         {
           std::stringstream ss;
           ss << std::hex << std::setfill('0');
           ss << std::setw(8) << index;
 
-          for (int column = 0; column < 16; column++)
+          for (unsigned int column = 0; column < 16; column++)
             {
               if (column % 8 == 0)
                 {
@@ -65,7 +65,7 @@ namespace loopp
             }
 
           ss << "  ";
-          for (int column = 0; column < std::min(std::size_t(16), size - index); column++)
+          for (unsigned int column = 0; column < std::min(std::size_t(16), size - index); column++)
             {
               if (data[index + column] < 32)
                 {
