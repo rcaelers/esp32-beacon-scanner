@@ -158,6 +158,7 @@ HttpClient::send_request()
 #endif
       auto self = shared_from_this();
       sock->write_async(request_buffer, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+        (void)bytes_transferred;
         if (!ec)
           {
             // TODO: support sending chunked body.
@@ -198,6 +199,7 @@ HttpClient::send_body()
 
       auto self = shared_from_this();
       sock->write_async(request_buffer, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+        (void)bytes_transferred;
         if (!ec)
           {
             read_response();
@@ -219,6 +221,7 @@ HttpClient::read_response()
 {
   auto self = shared_from_this();
   sock->read_until_async(response_buffer, "\r\n\r\n", [this, self](std::error_code ec, std::size_t bytes_transferred) {
+    (void)bytes_transferred;
     if (!ec)
       {
         handle_response();

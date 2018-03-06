@@ -182,6 +182,7 @@ GPIOPin::start()
       mqtt->subscribe(topic);
       auto self = shared_from_this();
       mqtt->add_filter(topic, loopp::core::bind_loop(loop, [this, self](std::string topic, std::string payload) {
+                         (void)topic;
                          std::transform(payload.begin(), payload.end(), payload.begin(), ::tolower);
                          bool on = (payload == "true" || payload == "1" || payload == "on" || payload == "yes");
                          gpio_set_level(pin_no, (on != invert) ? 1 : 0);
