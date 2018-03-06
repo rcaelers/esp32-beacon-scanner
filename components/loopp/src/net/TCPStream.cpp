@@ -29,7 +29,7 @@ using namespace loopp;
 using namespace loopp::net;
 
 TCPStream::TCPStream(std::shared_ptr<loopp::core::MainLoop> loop)
-  : Stream(loop)
+  : Stream(std::move(loop))
 {
 }
 
@@ -66,8 +66,10 @@ TCPStream::socket_close()
 }
 
 void
-TCPStream::socket_on_connected(std::string host, connect_callback_t callback)
+TCPStream::socket_on_connected(const std::string &host, const connect_callback_t &callback)
 {
+  (void) host;
+
   connected_property.set(true);
   callback(std::error_code());
 }

@@ -22,7 +22,7 @@
 
 #include <sstream>
 #include <iomanip>
-#include <string.h>
+#include <cstring>
 
 #ifdef CONFIG_BT_ENABLED
 
@@ -33,17 +33,16 @@
 
 #include "loopp/core/Task.hpp"
 
-static const char tag[] = "BLE";
+static const char *tag = "BLE";
 
 using namespace loopp;
 using namespace loopp::ble;
 
 BLEScanner::BLEScanner()
+  : ble_scan_params()
 {
   init();
 }
-
-BLEScanner::~BLEScanner() {}
 
 void
 BLEScanner::gap_event_handler_static(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
@@ -87,13 +86,12 @@ BLEScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 
       case ESP_GAP_BLE_SCAN_RESULT_EVT:
         {
-          esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
-          switch (scan_result->scan_rst.search_evt)
+          switch (param->scan_rst.search_evt)
             {
               case ESP_GAP_SEARCH_INQ_RES_EVT:
                 {
-                  ScanResult beacon(&scan_result->scan_rst);
-                  signal_scan_result(std::move(beacon));
+                  ScanResult beacon(&param->scan_rst);
+                  signal_scan_result(beacon);
                   break;
                 }
 
@@ -106,7 +104,7 @@ BLEScanner::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
                 }
 
               default:
-                ESP_LOGI(tag, "Unhandled scan result %d.", scan_result->scan_rst.search_evt);
+                ESP_LOGI(tag, "Unhandled scan result %d.", param->scan_rst.search_evt);
                 break;
             }
           break;
@@ -202,7 +200,7 @@ BLEScanner::ScanResult::bda_as_string()
 
   for (int i = 0; i < 6; i++)
     {
-      stream << (int)bda[i];
+      stream << static_cast<int>(bda[i]);
       if (i != 5)
         {
           stream << ':';

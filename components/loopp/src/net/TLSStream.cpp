@@ -24,7 +24,6 @@
 #include <system_error>
 
 #include <netdb.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -42,7 +41,7 @@ extern "C"
 
 #include "esp_log.h"
 
-static const char tag[] = "NET";
+static const char *tag = "NET";
 
 using namespace loopp;
 using namespace loopp::net;
@@ -107,7 +106,7 @@ TLSStream::init_entropy()
   mbedtls_entropy_init(&entropy);
   mbedtls_ctr_drbg_init(&ctr_drbg);
 
-  int ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+  int ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, nullptr, 0);
   throw_if_failure("mbedtls_ctr_drbg_seed", ret);
 }
 
@@ -115,7 +114,7 @@ void
 TLSStream::parse_cert(mbedtls_x509_crt *crt, const char *cert_str)
 {
   mbedtls_x509_crt_init(crt);
-  int ret = mbedtls_x509_crt_parse(crt, (const unsigned char *)cert_str, strlen(cert_str) + 1);
+  int ret = mbedtls_x509_crt_parse(crt, reinterpret_cast<const unsigned char *>(cert_str), strlen(cert_str) + 1);
   throw_if_failure("mbedtls_x509_crt_parse", ret);
 }
 
@@ -123,7 +122,11 @@ void
 TLSStream::parse_key(mbedtls_pk_context *key, const char *key_str)
 {
   mbedtls_pk_init(key);
-  int ret = mbedtls_pk_parse_key(key, (const unsigned char *)key_str, strlen(key_str) + 1, (const unsigned char *)"", 0);
+  int ret = mbedtls_pk_parse_key(key,
+                                 reinterpret_cast<const unsigned char *>(key_str),
+                                 strlen(key_str) + 1,
+                                 reinterpret_cast<const unsigned char *>(""),
+                                 0);
   throw_if_failure("mbedtls_x509_crt_parse", ret);
 }
 
@@ -166,7 +169,7 @@ TLSStream::socket_close()
 }
 
 void
-TLSStream::socket_on_connected(std::string host, connect_callback_t callback)
+TLSStream::socket_on_connected(const std::string &host, const connect_callback_t &callback)
 {
   ESP_LOGD(tag, "Connected. Starting handshake");
 
@@ -180,13 +183,13 @@ TLSStream::socket_on_connected(std::string host, connect_callback_t callback)
       ret = mbedtls_ssl_config_defaults(&config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
       throw_if_failure("mbedtls_ssl_config_defaults", ret);
 
-      mbedtls_ssl_conf_verify(&config, verify_certificate, NULL);
+      mbedtls_ssl_conf_verify(&config, verify_certificate, nullptr);
       mbedtls_ssl_conf_rng(&config, mbedtls_ctr_drbg_random, &ctr_drbg);
       mbedtls_ssl_conf_authmode(&config, have_ca_cert ? MBEDTLS_SSL_VERIFY_REQUIRED : MBEDTLS_SSL_VERIFY_OPTIONAL);
       if (have_ca_cert)
         {
           ESP_LOGD(tag, "Using CA cert");
-          mbedtls_ssl_conf_ca_chain(&config, &ca_crt, NULL);
+          mbedtls_ssl_conf_ca_chain(&config, &ca_crt, nullptr);
         }
       if (have_client_cert)
         {
@@ -194,7 +197,7 @@ TLSStream::socket_on_connected(std::string host, connect_callback_t callback)
           ret = mbedtls_ssl_conf_own_cert(&config, &client_crt, &client_key);
           throw_if_failure("mbedtls_ssl_conf_own_cert", ret);
         }
-      mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
+      mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, nullptr);
 
       ret = mbedtls_ssl_setup(&ssl, &config);
       throw_if_failure("mbedtls_ssl_setup", ret);
@@ -208,7 +211,7 @@ TLSStream::socket_on_connected(std::string host, connect_callback_t callback)
 }
 
 void
-TLSStream::on_handshake(connect_callback_t callback)
+TLSStream::on_handshake(const connect_callback_t &callback)
 {
   try
     {
@@ -263,10 +266,10 @@ TLSStream::on_handshake(connect_callback_t callback)
               ESP_LOGE(tag, "TLS Verify failed: %s", buf);
             }
 
-          if (mbedtls_ssl_get_peer_cert(&ssl) != NULL)
+          if (mbedtls_ssl_get_peer_cert(&ssl) != nullptr)
             {
               char buf[512];
-              mbedtls_x509_crt_info((char *)buf, sizeof(buf) - 1, "", mbedtls_ssl_get_peer_cert(&ssl));
+              mbedtls_x509_crt_info(static_cast<char *>(buf), sizeof(buf) - 1, "", mbedtls_ssl_get_peer_cert(&ssl));
               ESP_LOGD(tag, "Peer certificate information: %s", buf);
             }
 
@@ -281,7 +284,7 @@ TLSStream::on_handshake(connect_callback_t callback)
 }
 
 void
-TLSStream::log_failure(std::string msg, int error_code)
+TLSStream::log_failure(const std::string &msg, int error_code)
 {
   if (error_code != 0)
     {
@@ -292,7 +295,7 @@ TLSStream::log_failure(std::string msg, int error_code)
 }
 
 void
-TLSStream::throw_if_failure(std::string msg, int error_code)
+TLSStream::throw_if_failure(const std::string &msg, int error_code)
 {
   if (error_code != 0)
     {
@@ -310,7 +313,8 @@ int
 TLSStream::verify_certificate(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags)
 {
   char buf[1024];
-  ((void)data);
+  (void)data;
+  (void)flags;
 
   ESP_LOGD(tag, "Verify requested for (depth %d):", depth);
   mbedtls_x509_crt_info(buf, sizeof(buf) - 1, "", crt);

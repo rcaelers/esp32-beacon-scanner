@@ -48,8 +48,7 @@ namespace loopp
     class MqttClient : public std::enable_shared_from_this<MqttClient>
     {
     public:
-      using subscribe_function_t = void(std::string topic, std::string payload);
-      using subscribe_callback_t = std::function<subscribe_function_t>;
+      using subscribe_callback_t = std::function<void(const std::string &topic, const std::string &payload)>;
 
       MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string client_id, std::string host, int port);
       ~MqttClient();
@@ -60,27 +59,27 @@ namespace loopp
       void set_callback(subscribe_callback_t callback);
       void set_client_id(std::string client_id);
       void set_username(std::string username);
-      void set_password(std::string username);
+      void set_password(std::string password);
       void set_will(std::string topic, std::string data);
       void set_will_retain(bool retain);
 
       void connect();
       void disconnect();
-      void publish(std::string topic, std::string payload, PublishOptions options = PublishOptions::None);
-      void subscribe(std::string topic);
-      void unsubscribe(std::string topic);
+      void publish(const std::string &topic, const std::string &payload, PublishOptions options = PublishOptions::None);
+      void subscribe(const std::string &topic);
+      void unsubscribe(const std::string &topic);
 
-      void add_filter(std::string filter, subscribe_callback_t callback);
-      void remove_filter(std::string filter);
+      void add_filter(const std::string &filter, subscribe_callback_t callback);
+      void remove_filter(const std::string &filter);
 
       loopp::core::Property<bool> &connected();
 
     private:
       void send_connect();
       void send_ping();
-      void send_publish(std::string topic, std::string payload, PublishOptions options = PublishOptions::None);
-      void send_subscribe(std::list<std::string> topics);
-      void send_unsubscribe(std::list<std::string> topics);
+      void send_publish(const std::string &topic, const std::string &payload, PublishOptions options = PublishOptions::None);
+      void send_subscribe(const std::list<std::string> &topics);
+      void send_unsubscribe(const std::list<std::string> &topics);
 
       void async_read_control_packet();
       void async_read_remaining_length();
@@ -100,9 +99,9 @@ namespace loopp
       std::error_code handle_unsubscribe_ack();
       std::error_code handle_ping_response();
 
-      void handle_error(std::string what, std::error_code ec);
-      std::error_code verify(std::string what, std::size_t actual_size, std::size_t expect_size, std::error_code ec = std::error_code());
-      bool match_topic(std::string topic, std::string filter);
+      void handle_error(const std::string &what, std::error_code ec);
+      std::error_code verify(const std::string &what, std::size_t actual_size, std::size_t expect_size, std::error_code ec = std::error_code());
+      bool match_topic(const std::string &topic, const std::string &filter);
 
     private:
       std::shared_ptr<loopp::core::MainLoop> loop;

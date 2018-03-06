@@ -27,9 +27,7 @@ using namespace loopp::core;
 
 Task::Task(const std::string &name, std::function<void()> func, CoreId core_id, uint16_t stack_size, UBaseType_t priority)
   : name(name)
-  , func(func)
-  , stack_size(stack_size)
-  , priority(priority)
+  , func(std::move(func))
 {
   BaseType_t rc = pdPASS;
   if (core_id != CoreId::NoAffinity)
@@ -43,7 +41,7 @@ Task::Task(const std::string &name, std::function<void()> func, CoreId core_id, 
 
   if (rc != pdPASS)
     {
-      throw std::errc::resource_unavailable_try_again;
+      throw std::system_error(std::make_error_code(std::errc::resource_unavailable_try_again));
     }
 }
 

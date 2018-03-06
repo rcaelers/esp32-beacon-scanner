@@ -40,13 +40,13 @@ namespace loopp
       , public std::enable_shared_from_this<BLEScannerDriver>
     {
     public:
-      BLEScannerDriver(loopp::drivers::DriverContext context, nlohmann::json config);
+      BLEScannerDriver(loopp::drivers::DriverContext context, const nlohmann::json &config);
       ~BLEScannerDriver();
 
     private:
       static std::string base64_encode(const std::string &in);
 
-      void on_ble_scanner_scan_result(loopp::ble::BLEScanner::ScanResult result);
+      void on_ble_scanner_scan_result(const loopp::ble::BLEScanner::ScanResult &result);
       void on_scan_timer();
 
       virtual void start() override;

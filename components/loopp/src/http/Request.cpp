@@ -23,11 +23,11 @@
 #include <iostream>
 
 std::ostream &
-loopp::http::operator<<(std::ostream &stream, const Request &r)
+loopp::http::operator<<(std::ostream &stream, const Request &request)
 {
-  stream << "[Request method = " << r.method() << " "
-         << "URI = " << r.uri() << " "
-         << "header = " << r.headers() << " "
-         << "content = " << r.content() << "]";
+  stream << "[Request method = " << request.method() << " "
+         << "URI = " << request.uri() << " "
+         << "header = " << request.headers() << " "
+         << "content = " << request.content() << "]";
   return stream;
 }

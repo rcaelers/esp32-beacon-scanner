@@ -49,7 +49,7 @@ namespace loopp
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
       void execute(Request request, request_complete_callback_t callback);
-      void read_body_async(std::size_t size, body_callback_t callback);
+      void read_body_async(std::size_t size, const body_callback_t &callback);
 
       std::size_t get_body_length() const
       {
@@ -68,7 +68,7 @@ namespace loopp
       void handle_response();
       void parse_status_line(std::istream &response_stream);
       void parse_headers(std::istream &response_stream);
-      void handle_error(std::string what, std::error_code ec);
+      void handle_error(const std::string &what, std::error_code ec);
 
     private:
       std::shared_ptr<loopp::core::MainLoop> loop;

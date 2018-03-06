@@ -45,7 +45,7 @@ namespace loopp
       Wifi(const Wifi &) = delete;
       Wifi &operator=(const Wifi &) = delete;
 
-      void set_host_name(const std::string &name);
+      void set_host_name(const std::string &host_name);
       void set_ssid(const std::string &ssid);
       void set_passphase(const std::string &passphrase);
       void set_auto_connect(bool auto_connect);

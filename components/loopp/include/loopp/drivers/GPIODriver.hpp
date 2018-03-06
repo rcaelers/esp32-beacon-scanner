@@ -44,7 +44,7 @@ namespace loopp
       class GPIOPin : public std::enable_shared_from_this<GPIOPin>
       {
       public:
-        GPIOPin(loopp::drivers::DriverContext context, std::shared_ptr<loopp::core::QueueISR<gpio_num_t>> queue, nlohmann::json config);
+        GPIOPin(loopp::drivers::DriverContext context, std::shared_ptr<loopp::core::QueueISR<gpio_num_t>> queue, const nlohmann::json &config);
         ~GPIOPin();
 
         void start();
@@ -57,9 +57,9 @@ namespace loopp
         bool is_out() const;
 
       private:
-        void set_pin_direction(nlohmann::json config);
-        void set_pin_mode(nlohmann::json config);
-        void set_pin_trigger(nlohmann::json config);
+        void set_pin_direction(const nlohmann::json &config);
+        void set_pin_mode(const nlohmann::json &config);
+        void set_pin_trigger(const nlohmann::json &config);
 
         static void IRAM_ATTR gpio_isr_handler(void *arg);
 
@@ -75,7 +75,7 @@ namespace loopp
         bool initial = false;
         bool invert = false;
         bool retain = false;
-        int debounce = 0;
+        unsigned int debounce = 0;
         TickType_t last_tick = 0;
         bool started = false;
       };
@@ -86,7 +86,7 @@ namespace loopp
       , public std::enable_shared_from_this<GPIODriver>
     {
     public:
-      GPIODriver(loopp::drivers::DriverContext context, nlohmann::json config);
+      GPIODriver(loopp::drivers::DriverContext context, const nlohmann::json &config);
       ~GPIODriver();
 
     private:

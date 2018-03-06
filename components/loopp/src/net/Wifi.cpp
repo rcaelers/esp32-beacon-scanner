@@ -20,12 +20,12 @@
 
 #include "loopp/net/Wifi.hpp"
 
-#include <string.h>
+#include <cstring>
 
 #include "esp_log.h"
 #include "esp_event_loop.h"
 
-static const char tag[] = "WIFI";
+static const char *tag = "WIFI";
 
 using namespace loopp;
 using namespace loopp::net;
@@ -112,7 +112,7 @@ Wifi::get_mac() const
 esp_err_t
 Wifi::on_sysem_event(void *ctx, system_event_t *event)
 {
-  Wifi *wifi = static_cast<Wifi *>(ctx);
+  auto wifi = static_cast<Wifi *>(ctx);
   return wifi->on_sysem_event(event);
 }
 

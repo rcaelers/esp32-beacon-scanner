@@ -43,10 +43,9 @@ const std::string
 Uri::escape(const std::string &in)
 {
   std::string ret;
-  for (std::string::const_iterator it = in.begin(); it != in.end(); it++)
+  for (unsigned char ch : in)
     {
-      const unsigned char ch = *it;
-      if (isalnum(ch) || (ch == '-') || (ch == '_') || (ch == '.') || (ch == '~'))
+      if ((isalnum(ch) != 0) || (ch == '-') || (ch == '_') || (ch == '.') || (ch == '~'))
         {
           ret += ch;
         }
@@ -67,7 +66,7 @@ Uri::escape(const std::string &in)
 const std::string
 Uri::unescape(const std::string &in)
 {
-  string ret;
+  string ret = in;
   // TODO:
   return ret;
 }
@@ -95,7 +94,7 @@ Uri::parse(const std::string &uri)
     }
 
   scheme_ = matches["scheme"];
-  if (scheme_ == "")
+  if (scheme_.empty())
     {
       scheme_ = "http";
     }
@@ -105,7 +104,7 @@ Uri::parse(const std::string &uri)
 
   host_ = matches["host"];
   std::string portstr = matches["port"];
-  if (portstr != "")
+  if (!portstr.empty())
     {
       port_ = boost::lexical_cast<uint16_t>(portstr);
     }
@@ -119,15 +118,15 @@ Uri::parse(const std::string &uri)
   fragment_ = matches["fragment"];
   fullpath_ = matches["fullpath"];
 
-  if (query_ != "")
+  if (!query_.empty())
     {
       vector<string> query_params;
       boost::split(query_params, query_, boost::is_any_of("&"));
 
-      for (size_t i = 0; i < query_params.size(); ++i)
+      for (auto & query_param : query_params)
         {
           vector<string> param_elements;
-          boost::split(param_elements, query_params[i], boost::is_any_of("="));
+          boost::split(param_elements, query_param, boost::is_any_of("="));
 
           if (param_elements.size() == 2)
             {
@@ -141,16 +140,16 @@ namespace loopp
 {
   namespace http
   {
-    std::ostream &operator<<(std::ostream &stream, const Uri &u)
+    std::ostream &operator<<(std::ostream &stream, const Uri &uri)
     {
-      stream << "[URI scheme = " << u.scheme() << " "
-             << "username = " << u.username() << " "
-             << "password = " << u.password() << " "
-             << "port = " << u.port() << " "
-             << "path = " << u.path() << " "
-             << "fragment = " << u.fragment() << " "
-             << "query = " << u.query() << " "
-             << "fullpath = " << u.fullpath() << "]";
+      stream << "[URI scheme = " << uri.scheme() << " "
+             << "username = " << uri.username() << " "
+             << "password = " << uri.password() << " "
+             << "port = " << uri.port() << " "
+             << "path = " << uri.path() << " "
+             << "fragment = " << uri.fragment() << " "
+             << "query = " << uri.query() << " "
+             << "fullpath = " << uri.fullpath() << "]";
       return stream;
     }
   } // namespace http

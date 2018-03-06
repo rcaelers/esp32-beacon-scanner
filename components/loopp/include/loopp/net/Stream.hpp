@@ -40,18 +40,16 @@ namespace loopp
     class Stream : public std::enable_shared_from_this<Stream>
     {
     public:
-      using connect_function_t = void(std::error_code ec);
-      using io_function_t = void(std::error_code ec, std::size_t bytes_transferred);
-      using connect_callback_t = std::function<connect_function_t>;
-      using io_callback_t = std::function<io_function_t>;
+      using connect_callback_t = std::function<void(std::error_code ec)>;
+      using io_callback_t = std::function<void(std::error_code ec, std::size_t bytes_transferred)>;
 
       Stream(std::shared_ptr<loopp::core::MainLoop> loop);
       virtual ~Stream();
 
-      void connect(std::string host, int port, connect_callback_t callback);
-      void write_async(StreamBuffer &buf, io_callback_t callback);
-      void read_async(StreamBuffer &buf, std::size_t count, io_callback_t callback);
-      void read_until_async(StreamBuffer &buf, std::string until, io_callback_t callback);
+      void connect(const std::string &host, int port, const connect_callback_t &callback);
+      void write_async(StreamBuffer &buffer, const io_callback_t &callback);
+      void read_async(StreamBuffer &buffer, std::size_t count, const io_callback_t &callback);
+      void read_until_async(StreamBuffer &buffer, const std::string &until, const io_callback_t &callback);
       void close();
 
       loopp::core::Property<bool> &connected();
@@ -60,7 +58,7 @@ namespace loopp
       virtual int socket_read(uint8_t *buffer, std::size_t count) = 0;
       virtual int socket_write(uint8_t *buffer, std::size_t count) = 0;
       virtual void socket_close() = 0;
-      virtual void socket_on_connected(std::string host, connect_callback_t callback) = 0;
+      virtual void socket_on_connected(const std::string &host, const connect_callback_t &callback) = 0;
 
       int get_socket() const
       {
@@ -68,13 +66,13 @@ namespace loopp
       }
 
     private:
-      void log_failure(std::string msg, int error_code);
-      void on_resolved(std::string host, struct addrinfo *res, connect_callback_t callback);
+      void log_failure(const std::string &msg, int error_code);
+      void on_resolved(const std::string &host, struct addrinfo *addr_list, const connect_callback_t &callback);
       void do_wait_write_async();
       void do_write_async();
-      void do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, io_callback_t callback);
-      void do_read_until_async(StreamBuffer &buf, std::string until, std::size_t bytes_transferred, io_callback_t callback);
-      bool match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match);
+      void do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, const io_callback_t &callback);
+      void do_read_until_async(StreamBuffer &buf, const std::string &until, std::size_t bytes_transferred, const io_callback_t &callback);
+      bool match_until(StreamBuffer &buf, std::size_t &start_pos, const std::string &match);
 
     protected:
       loopp::core::Property<bool> connected_property{ false };

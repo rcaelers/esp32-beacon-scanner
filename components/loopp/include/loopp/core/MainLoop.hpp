@@ -118,7 +118,7 @@ namespace loopp
       void handle_io(poll_list_type &poll_list_copy);
       void handle_queue();
       void handle_timers();
-      void invoke_func(deferred_func func);
+      void invoke_func(const deferred_func &func);
 
       static ThreadLocal<std::shared_ptr<MainLoop>> &get_thread_local();
 

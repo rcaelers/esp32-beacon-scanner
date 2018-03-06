@@ -73,7 +73,7 @@ namespace loopp
 
     private:
       BLEScanner();
-      ~BLEScanner();
+      ~BLEScanner() = default;
 
       static void gap_event_handler_static(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
       void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);

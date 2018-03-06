@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <string.h>
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 #include "esp_log.h"
@@ -26,7 +25,7 @@
 #include "loopp/net/Resolver.hpp"
 #include "loopp/net/NetworkErrors.hpp"
 
-static const char tag[] = "NET";
+static const char *tag = "NET";
 
 using namespace loopp;
 using namespace loopp::net;
@@ -60,7 +59,7 @@ Resolver::resolve_task()
         {
           int ret;
           std::error_code ec;
-          struct addrinfo hints;
+          struct addrinfo hints {};
           struct addrinfo *addr_list = nullptr;
 
           memset(&hints, 0, sizeof(hints));

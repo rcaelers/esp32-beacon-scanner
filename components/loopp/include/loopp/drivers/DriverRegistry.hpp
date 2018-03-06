@@ -69,7 +69,7 @@ namespace loopp
     {
     public:
       ~IDriverFactory() = default;
-      virtual std::shared_ptr<IDriver> create(DriverContext context, nlohmann::json config) = 0;
+      virtual std::shared_ptr<IDriver> create(DriverContext context, const nlohmann::json &config) = 0;
     };
 
     class DriverRegistry
@@ -90,7 +90,7 @@ namespace loopp
           }
       }
 
-      std::shared_ptr<IDriver> create(const std::string &name, DriverContext context, nlohmann::json config)
+      std::shared_ptr<IDriver> create(const std::string &name, DriverContext context, const nlohmann::json &config)
       {
         ESP_LOGI("REGISTRY", "Create %s", name.c_str());
         if (factories.find(name) != factories.end())
@@ -117,7 +117,7 @@ namespace loopp
         DriverRegistry::instance().register_driver(std::move(name), this);
       }
 
-      std::shared_ptr<IDriver> create(DriverContext context, nlohmann::json config)
+      std::shared_ptr<IDriver> create(DriverContext context, const nlohmann::json &config)
       {
         ESP_LOGI("REGISTRY", "DriverFactory create");
         return std::make_shared<T>(context, config);

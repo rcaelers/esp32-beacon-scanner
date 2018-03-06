@@ -36,23 +36,23 @@ namespace loopp
     class OTA : public std::enable_shared_from_this<OTA>
     {
     public:
-      using ota_result_function_t = void(std::error_code);
-      using ota_result_callback_t = std::function<ota_result_function_t>;
+      using ota_result_callback_t = std::function<void(std::error_code)>;
 
       OTA(std::shared_ptr<loopp::core::MainLoop> loop);
       ~OTA() = default;
+
       OTA(const OTA &) = delete;
       OTA &operator=(const OTA &) = delete;
 
       void set_client_certificate(const char *cert, const char *key);
       void set_ca_certificate(const char *cert);
 
-      void upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_callback_t callback);
+      void upgrade_async(const std::string &url, std::chrono::seconds timeout_duration, const ota_result_callback_t &callback);
       void commit();
 
     private:
       void check();
-      void on_http_response(std::error_code ec, loopp::http::Response response);
+      void on_http_response(std::error_code ec, const loopp::http::Response &response);
       void retrieve_body();
 
     private:
@@ -60,9 +60,8 @@ namespace loopp
       std::shared_ptr<loopp::http::HttpClient> client;
 
       ota_result_callback_t callback;
-
       esp_ota_handle_t update_handle = 0;
-      const esp_partition_t *update_partition = NULL;
+      const esp_partition_t *update_partition = nullptr;
       loopp::core::MainLoop::timer_id timeout_timer = 0;
     };
   } // namespace ota

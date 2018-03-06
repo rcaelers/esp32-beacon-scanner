@@ -22,7 +22,6 @@
 
 #include <iomanip>
 #include <sstream>
-#include <string.h>
 
 #include "boost/format.hpp"
 
@@ -31,7 +30,7 @@
 
 #include "loopp/ota/OTAErrors.hpp"
 
-static const char tag[] = "OTA";
+static const char *tag = "OTA";
 
 using namespace loopp;
 using namespace loopp::ota;
@@ -69,7 +68,7 @@ OTA::check()
 }
 
 void
-OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_result_callback_t callback)
+OTA::upgrade_async(const std::string &url, std::chrono::seconds timeout_duration, const ota_result_callback_t &callback)
 {
   try
     {
@@ -80,7 +79,7 @@ OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_r
           timeout_timer = loop->add_timer(std::chrono::seconds(timeout_duration), []() { esp_restart(); });
         }
 
-      update_partition = esp_ota_get_next_update_partition(NULL);
+      update_partition = esp_ota_get_next_update_partition(nullptr);
       ESP_LOGI(tag,
                "Writing to partition, type %d subtype %d at offset 0x%x",
                update_partition->type,
@@ -105,7 +104,7 @@ OTA::upgrade_async(std::string url, std::chrono::seconds timeout_duration, ota_r
 }
 
 void
-OTA::on_http_response(std::error_code ec, loopp::http::Response response)
+OTA::on_http_response(std::error_code ec, const loopp::http::Response &response)
 {
   if (!ec)
     {

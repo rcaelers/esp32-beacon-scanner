@@ -34,8 +34,6 @@
 #include "loopp/utils/json.hpp"
 #include "loopp/utils/memlog.hpp"
 
-#include "string.h"
-
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -51,7 +49,7 @@ static const char current_version[] = VERSION;
 
 using json = nlohmann::json;
 
-static const char tag[] = "BEACON-SCANNER";
+static const char *tag = "BEACON-SCANNER";
 
 #ifdef CONFIG_EMBEDDED_CERTIFICATES
 #ifdef CONFIG_CA_CERTIFICATE
@@ -85,6 +83,8 @@ public:
     mqtt = std::make_shared<loopp::mqtt::MqttClient>(loop, client_id, CONFIG_MQTT_HOST, CONFIG_MQTT_PORT);
     task = std::make_shared<loopp::core::Task>("main_task", std::bind(&Main::main_task, this));
   }
+
+  ~Main() = default;
 
   Main(const Main &other) = delete;
   Main(Main &&other) = delete;
@@ -181,7 +181,7 @@ private:
       }
   }
 
-  void on_mqtt_data(std::string topic, std::string payload)
+  void on_mqtt_data(const std::string &topic, const std::string &payload)
   {
     ESP_LOGI(tag, "-> MQTT %s -> %s (free %d)", topic.c_str(), payload.c_str(), heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
   }
@@ -216,11 +216,9 @@ private:
       }
   }
 
-  void on_provisioning(std::string payload)
+  void on_provisioning(const std::string &payload)
   {
     ESP_LOGI(tag, "-> MQTT provisioning: %s", payload.c_str());
-
-    // TODO: Allow re-configuration. Not all driver can be properly stopped/restarted.
 
     auto top = json::parse(payload);
 
@@ -264,7 +262,7 @@ private:
       }
   }
 
-  void on_remote_command(std::string payload)
+  void on_remote_command(const std::string &payload)
   {
     ESP_LOGI(tag, "-> MQTT remote command: %s", payload.c_str());
 
@@ -300,13 +298,13 @@ private:
       }
   }
 
-  void firmware_update(std::string url, int timeout)
+  void firmware_update(const std::string &url, int timeout)
   {
     // 520K is insufficient to run two TLS connections, so close MQTT before retrieving new firmware.
     mqtt->disconnect();
 
     // Memory may be freed asynchronously, so delay firmware update until mainloop had a change to terminate the MQTT connection...
-    loop->add_timer(std::chrono::milliseconds(1000), [this, url]() {
+    loop->add_timer(std::chrono::milliseconds(1000), [this, url, timeout]() {
       std::shared_ptr<loopp::ota::OTA> ota = std::make_shared<loopp::ota::OTA>(loop);
 
 #ifdef CONFIG_EMBEDDED_CERTIFICATES
@@ -317,7 +315,7 @@ private:
       ota->set_client_certificate(reinterpret_cast<const char *>(certificate_start), reinterpret_cast<const char *>(private_key_start));
 #endif
 #endif
-      ota->upgrade_async(url, std::chrono::seconds(60), loopp::core::bind_loop(loop, [this, ota](std::error_code ec) {
+      ota->upgrade_async(url, std::chrono::seconds(timeout), loopp::core::bind_loop(loop, [ota](std::error_code ec) {
                            ESP_LOGI(tag, "-> OTA ready");
                            if (!ec)
                              {
@@ -382,7 +380,7 @@ app_main()
   loopp::utils::memlog("app_main");
   new Main();
 
-  while (1)
+  while (true)
     {
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }

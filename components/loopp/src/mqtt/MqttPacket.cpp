@@ -20,8 +20,6 @@
 
 #include "loopp/mqtt/MqttPacket.hpp"
 
-static const char tag[] = "MQTT";
-
 using namespace loopp;
 using namespace loopp::mqtt;
 
@@ -37,13 +35,13 @@ MqttPacket::add(uint8_t value)
 }
 
 void
-MqttPacket::append(std::string s)
+MqttPacket::append(const std::string &s)
 {
   stream << s;
 }
 
 void
-MqttPacket::add(std::string str)
+MqttPacket::add(const std::string &str)
 {
   std::size_t size = str.size();
 

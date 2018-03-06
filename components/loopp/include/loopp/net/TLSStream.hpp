@@ -55,14 +55,14 @@ namespace loopp
       void init_entropy();
       void parse_cert(mbedtls_x509_crt *crt, const char *cert_str);
       void parse_key(mbedtls_pk_context *key, const char *key_str);
-      void throw_if_failure(std::string msg, int error_code);
-      void on_handshake(connect_callback_t callback);
-      void log_failure(std::string msg, int error_code);
+      void throw_if_failure(const std::string &msg, int error_code);
+      void on_handshake(const connect_callback_t &callback);
+      void log_failure(const std::string &msg, int error_code);
 
       virtual int socket_read(uint8_t *buffer, std::size_t count);
       virtual int socket_write(uint8_t *buffer, std::size_t count);
       virtual void socket_close();
-      virtual void socket_on_connected(std::string host, connect_callback_t callback);
+      virtual void socket_on_connected(const std::string &host, const connect_callback_t &callback);
 
       static int verify_certificate(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *flags);
 

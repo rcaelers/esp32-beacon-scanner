@@ -21,7 +21,6 @@
 #include "loopp/http/HttpClient.hpp"
 
 #include <algorithm>
-#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -40,13 +39,13 @@
 #include "loopp/net/TCPStream.hpp"
 #include "loopp/net/TLSStream.hpp"
 
-static const char tag[] = "HTTP";
+static const char *tag = "HTTP";
 
 using namespace loopp;
 using namespace loopp::http;
 
 HttpClient::HttpClient(std::shared_ptr<loopp::core::MainLoop> loop)
-  : loop(loop)
+  : loop(std::move(loop))
 {
 }
 
@@ -108,7 +107,7 @@ HttpClient::execute(Request request, request_complete_callback_t callback)
 }
 
 void
-HttpClient::read_body_async(std::size_t size, body_callback_t callback)
+HttpClient::read_body_async(std::size_t size, const body_callback_t &callback)
 {
   std::size_t bytes_to_read = std::min<std::size_t>(body_length_left, std::max<int>(0, size - response_buffer.consume_size()));
 
@@ -150,14 +149,15 @@ HttpClient::send_request()
         }
       stream << "\r\n";
 
+#ifdef NOT_YET_USED
       bool chunked = false;
       if (request.headers().has("Transfer-Encoding"))
         {
           chunked = boost::ifind_first(request.headers()["Transfer-Encoding"], "chunked");
         }
-
+#endif
       auto self = shared_from_this();
-      sock->write_async(request_buffer, [this, self, chunked](std::error_code ec, std::size_t bytes_transferred) {
+      sock->write_async(request_buffer, [this, self](std::error_code ec, std::size_t bytes_transferred) {
         if (!ec)
           {
             // TODO: support sending chunked body.
@@ -191,7 +191,7 @@ HttpClient::update_request_headers()
 void
 HttpClient::send_body()
 {
-  if (request.content().size() > 0)
+  if (!request.content().empty())
     {
       std::ostream stream(&request_buffer);
       stream << request.content();
@@ -297,7 +297,7 @@ HttpClient::parse_headers(std::istream &response_stream)
 }
 
 void
-HttpClient::handle_error(std::string what, std::error_code ec)
+HttpClient::handle_error(const std::string &what, std::error_code ec)
 {
   if (ec)
     {

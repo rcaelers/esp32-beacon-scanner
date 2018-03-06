@@ -61,8 +61,6 @@ namespace loopp
       const std::string name;
       std::function<void()> func;
       native_handle_type task_handle = nullptr;
-      uint32_t stack_size = 0;
-      UBaseType_t priority = 0;
     };
   } // namespace core
 } // namespace loopp

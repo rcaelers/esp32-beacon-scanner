@@ -33,11 +33,11 @@ using namespace loopp::drivers::details;
 
 using json = nlohmann::json;
 
-static const char tag[] = "GPIO";
+static const char *tag = "GPIO";
 
 // LOOPP_REGISTER_DRIVER("gpio", GPIODriver);
 
-GPIODriver::GPIODriver(loopp::drivers::DriverContext context, nlohmann::json config)
+GPIODriver::GPIODriver(loopp::drivers::DriverContext context, const nlohmann::json &config)
   : queue(std::make_shared<loopp::core::QueueISR<gpio_num_t>>())
   , task(std::make_shared<loopp::core::Task>("gpio_task", std::bind(&GPIODriver::gpio_task, this), loopp::core::Task::CoreId::NoAffinity, 2048))
 {
@@ -96,10 +96,10 @@ GPIODriver::gpio_task()
     }
 }
 
-GPIOPin::GPIOPin(loopp::drivers::DriverContext context, std::shared_ptr<loopp::core::QueueISR<gpio_num_t>> queue, nlohmann::json config)
+GPIOPin::GPIOPin(loopp::drivers::DriverContext context, std::shared_ptr<loopp::core::QueueISR<gpio_num_t>> queue, const nlohmann::json &config)
   : loop(context.get_loop())
   , mqtt(context.get_mqtt())
-  , queue(queue)
+  , queue(std::move(queue))
 {
   pin.pin_bit_mask = 0;
   pin.mode = GPIO_MODE_DISABLE;
@@ -219,7 +219,7 @@ GPIOPin::stop()
 }
 
 void
-GPIOPin::set_pin_direction(nlohmann::json config)
+GPIOPin::set_pin_direction(const nlohmann::json &config)
 {
   auto it = config.find("direction");
   if (it != config.end())
@@ -255,7 +255,7 @@ GPIOPin::set_pin_direction(nlohmann::json config)
 }
 
 void
-GPIOPin::set_pin_mode(nlohmann::json config)
+GPIOPin::set_pin_mode(const nlohmann::json &config)
 {
   std::string mode = "pulldown";
 
@@ -274,7 +274,7 @@ GPIOPin::set_pin_mode(nlohmann::json config)
 }
 
 void
-GPIOPin::set_pin_trigger(nlohmann::json config)
+GPIOPin::set_pin_trigger(const nlohmann::json &config)
 {
   auto it = config.find("trigger");
   if (it != config.end())
@@ -311,7 +311,7 @@ GPIOPin::set_pin_trigger(nlohmann::json config)
 void IRAM_ATTR
 GPIOPin::gpio_isr_handler(void *arg)
 {
-  GPIOPin *self = static_cast<GPIOPin *>(arg);
+  auto self = static_cast<GPIOPin *>(arg);
   self->queue->push(self->pin_no);
 }
 

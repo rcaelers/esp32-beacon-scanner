@@ -56,7 +56,7 @@ namespace loopp
 
               if (index + column < size)
                 {
-                  ss << ' ' << std::setw(2) << (unsigned)data[index + column];
+                  ss << ' ' << std::setw(2) << static_cast<unsigned>(data[index + column]);
                 }
               else
                 {

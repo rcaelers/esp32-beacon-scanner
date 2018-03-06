@@ -23,7 +23,6 @@
 #include <string>
 #include <system_error>
 #include <algorithm>
-#include <cstring>
 
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
@@ -34,7 +33,7 @@
 
 #include "loopp/utils/hexdump.hpp"
 
-static const char tag[] = "MAINLOOP";
+static const char *tag = "MAINLOOP";
 
 using namespace loopp;
 using namespace loopp::core;
@@ -45,7 +44,7 @@ MainLoop::~MainLoop()
 }
 
 void
-MainLoop::invoke_func(std::function<void()> func)
+MainLoop::invoke_func(const std::function<void()> &func)
 {
   ScopedLock l(queue_mutex);
   queue.push(func);
@@ -73,15 +72,15 @@ MainLoop::get_thread_local()
 }
 
 void
-MainLoop::notify_read(int fd, io_callback cb, std::chrono::milliseconds timeout_duration)
+MainLoop::notify_read(int fd, io_callback read_cb, std::chrono::milliseconds timeout_duration)
 {
-  notify(fd, IoType::Read, cb, timeout_duration);
+  notify(fd, IoType::Read, std::move(read_cb), timeout_duration);
 }
 
 void
-MainLoop::notify_write(int fd, io_callback cb, std::chrono::milliseconds timeout_duration)
+MainLoop::notify_write(int fd, io_callback write_cb, std::chrono::milliseconds timeout_duration)
 {
-  notify(fd, IoType::Write, cb, timeout_duration);
+  notify(fd, IoType::Write, std::move(write_cb), timeout_duration);
 }
 
 void
@@ -124,7 +123,7 @@ MainLoop::notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds 
 
   if (iter != poll_list.end())
     {
-      iter->callback = cb;
+      iter->callback = std::move(cb);
       iter->start_time = std::chrono::system_clock::now();
       iter->timeout_duration = timeout_duration;
     }
@@ -134,7 +133,7 @@ MainLoop::notify(int fd, IoType type, io_callback cb, std::chrono::milliseconds 
       pd.fd = fd;
       pd.type = type;
       pd.cancelled = false;
-      pd.callback = cb;
+      pd.callback = std::move(cb);
       pd.start_time = std::chrono::system_clock::now();
       pd.timeout_duration = timeout_duration;
       poll_list.push_back(pd);
@@ -178,7 +177,7 @@ MainLoop::add_timer(std::chrono::milliseconds duration, timer_callback callback)
   data.id = next_timer_id++;
   data.expire_time = now + duration;
   data.period = std::chrono::milliseconds::max();
-  data.callback = callback;
+  data.callback = std::move(callback);
 
   timers.push_back(data);
   trigger.signal();
@@ -196,7 +195,7 @@ MainLoop::add_periodic_timer(std::chrono::milliseconds period, timer_callback ca
   data.id = next_timer_id++;
   data.expire_time = now + period;
   data.period = period;
-  data.callback = callback;
+  data.callback = std::move(callback);
 
   timers.push_back(data);
   trigger.signal();
@@ -232,10 +231,7 @@ MainLoop::get_first_expiring_timer_duration()
     {
       return std::chrono::duration_cast<std::chrono::milliseconds>(iter->expire_time - std::chrono::system_clock::now());
     }
-  else
-    {
-      return std::chrono::milliseconds::max();
-    }
+  return std::chrono::milliseconds::max();
 }
 
 int
@@ -284,7 +280,7 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
 
   if (timeout != std::chrono::milliseconds::max())
     {
-      timeval tv;
+      timeval tv {};
       tv.tv_sec = timeout.count() / 1000;
       tv.tv_usec = (timeout.count() % 1000) * 1000;
 #if DEBUG_SELECT

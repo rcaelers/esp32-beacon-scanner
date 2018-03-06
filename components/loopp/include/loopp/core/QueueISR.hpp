@@ -61,7 +61,7 @@ namespace loopp
 
       void IRAM_ATTR push(const T &obj)
       {
-        xQueueSendFromISR(queue_handle, &obj, NULL);
+        xQueueSendFromISR(queue_handle, &obj, nullptr);
       }
 
       bool pop(T &obj)

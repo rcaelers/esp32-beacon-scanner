@@ -36,9 +36,9 @@ using namespace loopp::drivers;
 
 using json = nlohmann::json;
 
-static const char tag[] = "BLE-SCANNER";
+static const char *tag = "BLE-SCANNER";
 
-BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, nlohmann::json config)
+BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, const nlohmann::json &config)
   : loop(context.get_loop())
   , mqtt(context.get_mqtt())
   , ble_scanner(loopp::ble::BLEScanner::instance())
@@ -116,7 +116,7 @@ BLEScannerDriver::base64_encode(const std::string &in)
     {
       out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[((val << 8) >> (valb + 8)) & 0x3F]);
     }
-  while (out.size() % 4)
+  while ((out.size() % 4) != 0u)
     {
       out.push_back('=');
     }
@@ -124,7 +124,7 @@ BLEScannerDriver::base64_encode(const std::string &in)
 }
 
 void
-BLEScannerDriver::on_ble_scanner_scan_result(loopp::ble::BLEScanner::ScanResult result)
+BLEScannerDriver::on_ble_scanner_scan_result(const loopp::ble::BLEScanner::ScanResult &result)
 {
   if (feedback)
     {

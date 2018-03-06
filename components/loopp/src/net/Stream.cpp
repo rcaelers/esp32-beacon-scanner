@@ -23,7 +23,6 @@
 #include <string>
 #include <system_error>
 
-#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -42,14 +41,14 @@ extern "C"
 
 #include "esp_log.h"
 
-static const char tag[] = "NET";
+static const char *tag = "NET";
 
 using namespace loopp;
 using namespace loopp::net;
 
 Stream::Stream(std::shared_ptr<loopp::core::MainLoop> loop)
   : sock(-1)
-  , loop(loop)
+  , loop(std::move(loop))
   , resolver(Resolver::instance())
 {
 }
@@ -64,7 +63,7 @@ Stream::~Stream()
 }
 
 void
-Stream::connect(std::string host, int port, connect_callback_t callback)
+Stream::connect(const std::string &host, int port, const connect_callback_t &callback)
 {
   ESP_LOGI(tag, "Connecting to %s:%s", host.c_str(), std::to_string(port).c_str());
   auto self = shared_from_this();
@@ -79,7 +78,7 @@ Stream::connect(std::string host, int port, connect_callback_t callback)
         callback(ec);
       }
 
-    if (addr_list != NULL)
+    if (addr_list != nullptr)
       {
         freeaddrinfo(addr_list);
       }
@@ -90,7 +89,7 @@ Stream::connect(std::string host, int port, connect_callback_t callback)
 }
 
 void
-Stream::on_resolved(std::string host, struct addrinfo *addr_list, connect_callback_t callback)
+Stream::on_resolved(const std::string &host, struct addrinfo *addr_list, const connect_callback_t &callback)
 {
   try
     {
@@ -156,7 +155,7 @@ Stream::on_resolved(std::string host, struct addrinfo *addr_list, connect_callba
 }
 
 void
-Stream::write_async(StreamBuffer &buffer, io_callback_t callback)
+Stream::write_async(StreamBuffer &buffer, const io_callback_t &callback)
 {
   if (!connected_property.get())
     {
@@ -177,13 +176,13 @@ Stream::write_async(StreamBuffer &buffer, io_callback_t callback)
 }
 
 void
-Stream::read_async(StreamBuffer &buffer, std::size_t count, io_callback_t callback)
+Stream::read_async(StreamBuffer &buffer, std::size_t count, const io_callback_t &callback)
 {
   do_read_async(buffer, count, 0, callback);
 }
 
 void
-Stream::read_until_async(StreamBuffer &buffer, std::string until, io_callback_t callback)
+Stream::read_until_async(StreamBuffer &buffer, const std::string &until, const io_callback_t &callback)
 {
   do_read_until_async(buffer, until, 0, callback);
 }
@@ -222,7 +221,7 @@ Stream::do_write_async()
 void
 Stream::do_wait_write_async()
 {
-  if (write_op_queue.size() > 0)
+  if (!write_op_queue.empty())
     {
       auto self = shared_from_this();
       loop->notify_write(sock, [this, self](std::error_code ec) {
@@ -242,7 +241,7 @@ Stream::do_wait_write_async()
 }
 
 void
-Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, io_callback_t callback)
+Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_transferred, const io_callback_t &callback)
 {
   auto self = shared_from_this();
   std::error_code ec;
@@ -255,7 +254,7 @@ Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_tr
   while (!ec && (bytes_transferred < count))
     {
       std::size_t left_to_read = count - bytes_transferred;
-      uint8_t *data = reinterpret_cast<uint8_t *>(buf.produce_data(left_to_read));
+      auto data = reinterpret_cast<uint8_t *>(buf.produce_data(left_to_read));
       int ret = socket_read(data, left_to_read);
 
       if (ret > 0)
@@ -293,7 +292,7 @@ Stream::do_read_async(StreamBuffer &buf, std::size_t count, std::size_t bytes_tr
 }
 
 bool
-Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match)
+Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, const std::string &match)
 {
   char *data = buf.consume_data() + start_pos;
   char *data_end = buf.consume_data() + buf.consume_size() - match.size();
@@ -315,7 +314,7 @@ Stream::match_until(StreamBuffer &buf, std::size_t &start_pos, std::string match
 }
 
 void
-Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t bytes_transferred, io_callback_t callback)
+Stream::do_read_until_async(StreamBuffer &buf, const std::string &until, std::size_t bytes_transferred, const io_callback_t &callback)
 {
   auto self = shared_from_this();
   std::error_code ec;
@@ -329,7 +328,7 @@ Stream::do_read_until_async(StreamBuffer &buf, std::string until, std::size_t by
   while (!ec && !match_until(buf, start_pos, until))
     {
       std::size_t left_to_read = 512; // TODO:
-      uint8_t *data = reinterpret_cast<uint8_t *>(buf.produce_data(left_to_read));
+      auto data = reinterpret_cast<uint8_t *>(buf.produce_data(left_to_read));
       int ret = socket_read(data, left_to_read);
 
       if (ret > 0)

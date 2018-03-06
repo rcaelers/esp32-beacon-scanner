@@ -21,7 +21,6 @@
 #include "loopp/mqtt/MqttClient.hpp"
 
 #include <algorithm>
-#include <cstring>
 
 #include "boost/format.hpp"
 
@@ -34,13 +33,13 @@
 #include "loopp/net/TLSStream.hpp"
 #include "loopp/net/NetworkErrors.hpp"
 
-static const char tag[] = "MQTT";
+static const char *tag = "MQTT";
 
 using namespace loopp;
 using namespace loopp::mqtt;
 
 MqttClient::MqttClient(std::shared_ptr<loopp::core::MainLoop> loop, std::string client_id, std::string host, int port)
-  : loop(loop)
+  : loop(std::move(loop))
   , client_id(std::move(client_id))
   , host(std::move(host))
   , port(port)
@@ -152,7 +151,7 @@ MqttClient::disconnect()
       throw std::system_error(MqttErrc::NotConnected, "not connected to MQTT server");
     }
 
-  if (ping_timer)
+  if (ping_timer != 0)
     {
       loop->cancel_timer(ping_timer);
       ping_timer = 0;
@@ -166,7 +165,7 @@ MqttClient::disconnect()
 }
 
 void
-MqttClient::publish(std::string topic, std::string payload, PublishOptions options)
+MqttClient::publish(const std::string &topic, const std::string &payload, PublishOptions options)
 {
   if (!connected_property.get())
     {
@@ -178,7 +177,7 @@ MqttClient::publish(std::string topic, std::string payload, PublishOptions optio
 }
 
 void
-MqttClient::subscribe(std::string topic)
+MqttClient::subscribe(const std::string &topic)
 {
   subscriptions.push_back(topic);
 
@@ -194,7 +193,7 @@ MqttClient::subscribe(std::string topic)
 }
 
 void
-MqttClient::unsubscribe(std::string topic)
+MqttClient::unsubscribe(const std::string &topic)
 {
   subscriptions.remove(topic);
 
@@ -226,19 +225,19 @@ MqttClient::send_connect()
 
       len += client_id.size() + 2;
 
-      if (username != "")
+      if (!username.empty())
         {
           flags |= ConnectFlags::UserName;
           len += username.size() + 2;
         }
 
-      if (password != "")
+      if (!password.empty())
         {
           flags |= ConnectFlags::Password;
           len += password.size() + 2;
         }
 
-      if (will_topic != "" && will_data != "")
+      if (!will_topic.empty() && !will_data.empty())
         {
           flags |= ConnectFlags::Will;
           if (will_retain)
@@ -318,7 +317,7 @@ MqttClient::send_ping()
 }
 
 void
-MqttClient::send_publish(std::string topic, std::string payload, PublishOptions options)
+MqttClient::send_publish(const std::string &topic, const std::string &payload, PublishOptions options)
 {
   try
     {
@@ -352,7 +351,7 @@ MqttClient::send_publish(std::string topic, std::string payload, PublishOptions 
 }
 
 void
-MqttClient::send_subscribe(std::list<std::string> topics)
+MqttClient::send_subscribe(const std::list<std::string> &topics)
 {
   try
     {
@@ -366,7 +365,7 @@ MqttClient::send_subscribe(std::list<std::string> topics)
       pkt->add_length(len);
       pkt->add(static_cast<std::uint8_t>(packet_id >> 8));
       pkt->add(static_cast<std::uint8_t>(packet_id & 0xff));
-      for (auto topic : topics)
+      for (const auto &topic : topics)
         {
           pkt->add(topic);
           pkt->add(0);
@@ -384,7 +383,7 @@ MqttClient::send_subscribe(std::list<std::string> topics)
 }
 
 void
-MqttClient::send_unsubscribe(std::list<std::string> topics)
+MqttClient::send_unsubscribe(const std::list<std::string> &topics)
 {
   try
     {
@@ -397,7 +396,7 @@ MqttClient::send_unsubscribe(std::list<std::string> topics)
       pkt->add_length(len);
       pkt->add(static_cast<std::uint8_t>(packet_id >> 8));
       pkt->add(static_cast<std::uint8_t>(packet_id & 0xff));
-      for (auto topic : topics)
+      for (const auto &topic : topics)
         {
           pkt->add(topic);
         }
@@ -459,7 +458,7 @@ MqttClient::handle_remaining_length()
   remaining_length += (header & 0b01111111) * remaining_length_multiplier;
   remaining_length_multiplier *= 128;
 
-  if (header & 0b10000000u)
+  if ((header & 0b10000000u) != 0u)
     {
       async_read_remaining_length();
     }
@@ -492,7 +491,7 @@ MqttClient::async_read_payload()
 std::error_code
 MqttClient::handle_payload()
 {
-  PacketType packet_type = static_cast<PacketType>(fixed_header >> 4);
+  auto packet_type = static_cast<PacketType>(fixed_header >> 4);
   std::error_code ec;
 
   switch (packet_type)
@@ -534,7 +533,7 @@ MqttClient::handle_payload()
         break;
 
       default:
-        verify((boost::format("invalid payload type: %1%") % ((int)packet_type)).str().c_str(), 0, 0, MqttErrc::ProtocolError);
+        verify((boost::format("invalid payload type: %1%") % (static_cast<int>(packet_type))).str(), 0, 0, MqttErrc::ProtocolError);
     }
 
   buffer.consume_commit(remaining_length);
@@ -553,8 +552,8 @@ MqttClient::handle_connect_ack()
   std::error_code ec = verify("handle ConnAck", remaining_length, 2, std::error_code());
   if (!ec)
     {
-      uint8_t *payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
-      uint8_t connect_return_code = static_cast<std::uint8_t>(payload_buffer[1]);
+      auto payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
+      auto connect_return_code = static_cast<std::uint8_t>(payload_buffer[1]);
       if (connect_return_code != 0)
         {
           ESP_LOGE(tag, "Error: Connect return code = %d", connect_return_code);
@@ -565,7 +564,7 @@ MqttClient::handle_connect_ack()
           ESP_LOGI(tag, "Info: Connect OK");
           ping_timer = loop->add_periodic_timer(std::chrono::milliseconds(ping_interval_sec * 1000), std::bind(&MqttClient::send_ping, this));
 
-          if (subscriptions.size() > 0)
+          if (!subscriptions.empty())
             {
               ESP_LOGI(tag, "Info: Connect OK - Sending subscriptions");
               send_subscribe(subscriptions);
@@ -587,8 +586,8 @@ MqttClient::handle_publish()
 
   try
     {
-      uint8_t *payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
-      BitMask<PublishFlags> flags;
+      auto payload_buffer = reinterpret_cast<uint8_t *>(buffer.consume_data());
+      BitMask<PublishFlags> flags{};
 
       flags.set(fixed_header & 0x0f);
 
@@ -729,14 +728,14 @@ MqttClient::handle_ping_response()
 }
 
 void
-MqttClient::handle_error(std::string what, std::error_code ec)
+MqttClient::handle_error(const std::string &what, std::error_code ec)
 {
   if (ec)
     {
       ESP_LOGE(tag, "Error: %s %s", what.c_str(), ec.message().c_str());
       connected_property.set(false);
 
-      if (ping_timer)
+      if (ping_timer != 0)
         {
           loop->cancel_timer(ping_timer);
           ping_timer = 0;
@@ -758,7 +757,7 @@ MqttClient::handle_error(std::string what, std::error_code ec)
 }
 
 std::error_code
-MqttClient::verify(std::string what, std::size_t actual_size, std::size_t expect_size, std::error_code ec)
+MqttClient::verify(const std::string &what, std::size_t actual_size, std::size_t expect_size, std::error_code ec)
 {
   if (!ec && actual_size != expect_size)
     {
@@ -778,7 +777,7 @@ MqttClient::connected()
 }
 
 bool
-MqttClient::match_topic(std::string topic, std::string filter)
+MqttClient::match_topic(const std::string &topic, const std::string &filter)
 {
   auto topic_it = topic.begin();
   auto filter_it = filter.begin();
@@ -789,7 +788,8 @@ MqttClient::match_topic(std::string topic, std::string filter)
         {
           return topic_it == topic.end();
         }
-      else if (topic_it == topic.end()) // && filter_it != filter.end()
+
+      if (topic_it == topic.end()) // && filter_it != filter.end()
         {
           if (*filter_it == '/')
             {
@@ -829,13 +829,13 @@ MqttClient::match_topic(std::string topic, std::string filter)
 }
 
 void
-MqttClient::add_filter(std::string filter, subscribe_callback_t callback)
+MqttClient::add_filter(const std::string &filter, subscribe_callback_t callback)
 {
   filters[filter] = std::move(callback);
 }
 
 void
-MqttClient::remove_filter(std::string filter)
+MqttClient::remove_filter(const std::string &filter)
 {
   filters.erase(filter);
 }
