@@ -20,7 +20,7 @@
 
 #include "loopp/core/MainLoop.hpp"
 
-#include <string>
+#include <string.h>
 #include <system_error>
 #include <algorithm>
 
