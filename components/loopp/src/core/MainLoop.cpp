@@ -273,8 +273,8 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
   int r = 0;
 
 #if DEBUG_SELECT
-  hexdump(tag, "IN r: ", reinterpret_cast<uint8_t *>(&read_set), sizeof(read_set));
-  hexdump(tag, "IN w: ", reinterpret_cast<uint8_t *>(&write_set), sizeof(write_set));
+  loopp::utils::hexdump(tag, "IN r: ", reinterpret_cast<uint8_t *>(&read_set), sizeof(read_set));
+  loopp::utils::hexdump(tag, "IN w: ", reinterpret_cast<uint8_t *>(&write_set), sizeof(write_set));
 #endif
 
   if (timeout != std::chrono::milliseconds::max())
@@ -294,8 +294,8 @@ MainLoop::do_select(poll_list_type &poll_list_copy)
 
 #if DEBUG_SELECT
   ESP_LOGD(tag, "Select ret = %d:", r);
-  hexdump(tag, "OUT r: ", reinterpret_cast<uint8_t *>(&read_set), sizeof(read_set));
-  hexdump(tag, "OUT w: ", reinterpret_cast<uint8_t *>(&write_set), sizeof(write_set));
+  loopp::utils::hexdump(tag, "OUT r: ", reinterpret_cast<uint8_t *>(&read_set), sizeof(read_set));
+  loopp::utils::hexdump(tag, "OUT w: ", reinterpret_cast<uint8_t *>(&write_set), sizeof(write_set));
 #endif
 
   return r;
