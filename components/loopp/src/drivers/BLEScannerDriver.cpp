@@ -138,23 +138,29 @@ BLEScannerDriver::on_ble_scanner_scan_result(const loopp::ble::BLEScanner::ScanR
 void
 BLEScannerDriver::on_scan_timer()
 {
-  json j;
-
-  loopp::utils::memlog("BLEScannerDriver::on_scan_timer");
-  if (mqtt && mqtt->connected().get())
+  loopp::utils::memlog("BLEScannerDriver::on_scan_timer entry");
+  try
     {
-      for (auto r : scan_results)
+      json j;
+      if (mqtt && mqtt->connected().get())
         {
-          ESP_LOGI(tag, "on_scan_timer %s", r.bda_as_string().c_str());
-          json jb;
-          jb["mac"] = r.bda_as_string();
-          jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(r.bda), sizeof(r.bda)));
-          jb["rssi"] = r.rssi;
-          jb["adv_data"] = base64_encode(r.adv_data);
-          j.push_back(jb);
-        }
+          for (auto r : scan_results)
+            {
+              ESP_LOGI(tag, "on_scan_timer %s", r.bda_as_string().c_str());
+              json jb;
+              jb["mac"] = r.bda_as_string();
+              jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(r.bda), sizeof(r.bda)));
+              jb["rssi"] = r.rssi;
+              jb["adv_data"] = base64_encode(r.adv_data);
+              j.push_back(jb);
+            }
 
-      mqtt->publish(topic_scan, j.dump());
+          mqtt->publish(topic_scan, j.dump());
+        }
+    }
+  catch (std::exception &e)
+    {
+      ESP_LOGE(tag, "on_scan_timer %s", e.what());
     }
   scan_results.clear();
 }
