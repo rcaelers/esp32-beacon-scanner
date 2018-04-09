@@ -34,7 +34,7 @@ namespace loopp
     class Task
     {
     public:
-      typedef TaskHandle_t native_handle_type;
+      typedef TaskHandle_t handle_type;
 
       enum class CoreId : BaseType_t
       {
@@ -49,9 +49,14 @@ namespace loopp
       Task(const Task &) = delete;
       Task &operator=(const Task &) = delete;
 
-      native_handle_type native_handle()
+      handle_type get_handle()
       {
         return task_handle;
+      }
+
+      static handle_type get_handle_of_current_task()
+      {
+        return xTaskGetCurrentTaskHandle();
       }
 
     private:
@@ -60,7 +65,7 @@ namespace loopp
     private:
       const std::string name;
       std::function<void()> func;
-      native_handle_type task_handle = nullptr;
+      handle_type task_handle = nullptr;
     };
   } // namespace core
 } // namespace loopp

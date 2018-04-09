@@ -34,6 +34,7 @@
 #include "loopp/core/Queue.hpp"
 #include "loopp/core/Trigger.hpp"
 #include "loopp/core/ThreadLocal.hpp"
+#include "loopp/core/Task.hpp"
 
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
@@ -79,6 +80,8 @@ namespace loopp
       timer_id add_timer(std::chrono::milliseconds duration, timer_callback callback);
       timer_id add_periodic_timer(std::chrono::milliseconds period, timer_callback callback);
       void cancel_timer(timer_id id);
+
+      void assert_is_mainloop();
 
     private:
       enum class IoType
@@ -134,6 +137,7 @@ namespace loopp
       timer_id next_timer_id = 1;
       mutable loopp::core::Mutex timer_list_mutex;
       timer_list_type timers;
+      Task::handle_type task_handle;
     };
 
     template<typename F>

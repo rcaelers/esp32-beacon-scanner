@@ -30,7 +30,6 @@
 #include "esp_log.h"
 
 #include "loopp/net/NetworkErrors.hpp"
-
 #include "loopp/utils/hexdump.hpp"
 
 static const char *tag = "MAINLOOP";
@@ -313,6 +312,7 @@ void
 MainLoop::run()
 {
   get_thread_local().set(shared_from_this());
+  task_handle = Task::get_handle_of_current_task();
 
   while (true)
     {
@@ -481,4 +481,10 @@ MainLoop::handle_queue()
             }
         }
     }
+}
+
+void
+MainLoop::assert_is_mainloop()
+{
+  assert(task_handle == Task::get_handle_of_current_task() && "Not running in MainLoop"); 
 }
