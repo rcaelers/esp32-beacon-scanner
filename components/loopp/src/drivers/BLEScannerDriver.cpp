@@ -27,6 +27,7 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 
+#include "loopp/ble/AdvertisementDecoder.hpp"
 #include "loopp/drivers/DriverRegistry.hpp"
 #include "loopp/utils/memlog.hpp"
 
@@ -152,6 +153,8 @@ BLEScannerDriver::on_scan_timer()
               jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(r.bda), sizeof(r.bda)));
               jb["rssi"] = r.rssi;
               jb["adv_data"] = base64_encode(r.adv_data);
+
+              decoder.decode(r.adv_data, jb);
               j.push_back(jb);
             }
 

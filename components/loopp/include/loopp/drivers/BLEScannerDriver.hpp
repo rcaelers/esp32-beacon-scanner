@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include "loopp/ble/AdvertisementDecoder.hpp"
 #include "loopp/core/MainLoop.hpp"
 #include "loopp/drivers/IDriver.hpp"
 #include "loopp/drivers/DriverRegistry.hpp"
@@ -60,6 +61,7 @@ namespace loopp
       std::list<loopp::ble::BLEScanner::ScanResult> scan_results;
       std::string topic_scan;
       loopp::core::ScopedConnection scan_result_signal_connection;
+      loopp::ble::AdvertisementDecoder decoder;
 
       gpio_num_t pin_no;
       bool feedback = false;
