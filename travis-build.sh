@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /esp32
+cd /esp32/esp-idf
 git checkout --track origin/$1
 git status
 
