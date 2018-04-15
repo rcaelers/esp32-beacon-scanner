@@ -1,6 +1,10 @@
 #!/bin/bash
 
-cd main/certs
+cd /esp32
+git checkout --track origin/$1
+git status
+
+cd /esp32/project/main/certs
 
 if [ -f CA.crt -o -f esp32.crt -o -f esp32.key ]; then
     echo "Certificates already exist. Not overwriting"
@@ -15,7 +19,7 @@ else
     chmod u+w,a+r *.crt *.key
 fi
 
-cd ../..
+cd /esp32/project
 
 cat > sdkconfig <<EOF
 CONFIG_MQTT_USER=""
@@ -29,5 +33,6 @@ CONFIG_EMBEDDED_CERTIFICATES=y
 CONFIG_DEFAULT_BLE_SCANNER=y
 EOF
 
+rm -rf build
 make defconfig
 make all
