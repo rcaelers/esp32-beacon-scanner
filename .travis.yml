@@ -19,4 +19,5 @@ before_install:
   - docker build -t rcaelers/esp32-loopp docker
 
 script:
-  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh
+  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh master
+  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh release/v3.0
