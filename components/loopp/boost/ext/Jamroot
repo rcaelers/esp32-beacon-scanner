@@ -129,10 +129,15 @@ import xsltproc ;
 import set ;
 import path ;
 import link ;
+import notfile ;
+import virtual-target ;
+import "class" : new ;
+import property-set ;
 import threadapi-feature ;
+import option ;
 
 path-constant BOOST_ROOT : . ;
-constant BOOST_VERSION : 1.66.0 ;
+constant BOOST_VERSION : 1.67.0 ;
 constant BOOST_JAMROOT_MODULE : $(__name__) ;
 
 boostcpp.set-version $(BOOST_VERSION) ;
@@ -246,7 +251,21 @@ for local l in $(all-libraries)
 # Log has an additional target
 explicit-alias log_setup : libs/log/build//boost_log_setup ;
 
-alias headers : $(all-headers)-headers : : : <include>.  ;
+rule do-nothing { }
+
+rule generate-alias ( project name : property-set : sources * )
+{
+    local action-name = [ $(property-set).get <action> ] ;
+    local m = [ MATCH ^@(.*) : $(action-name) ] ;
+    property-set = [ property-set.empty ] ;
+    local action = [ new action $(sources) : $(m[1]) : $(property-set) ] ;
+    local t = [ new notfile-target $(name) : $(project) : $(action) ] ;
+    return [ virtual-target.register $(t) ] ;
+}
+
+generate headers : $(all-headers)-headers : <generating-rule>@generate-alias <action>@do-nothing : : <include>.  ;
+
+#alias headers : $(all-headers)-headers : : : <include>.  ;
 explicit headers ;
 
 # Make project ids of all libraries known.
@@ -281,7 +300,9 @@ rule boost-install ( libraries * )
         : # No headers, it is handled by the dependency.
     ;
 
-    install stage : $(libraries) : <location>$(BOOST_STAGE_LOCATE) ;
+    local stage-locate = [ option.get stagedir : $(BOOST_ROOT)/stage ] ;
+
+    install stage : $(libraries) : <location>$(stage-locate)/lib ;
 
     module [ CALLER_MODULE ]
     {
@@ -311,9 +332,9 @@ headers =
     # installed (see http://lists.boost.org/Archives/boost/2007/05/121430.php).
     [ path.glob-tree $(BOOST_ROOT)/boost : *.hpp *.ipp *.h *.inc *.SUNWCCh : CVS .svn ]
     [ path.glob-tree $(BOOST_ROOT)/boost/compatibility/cpp_c_headers : c* : CVS .svn ]
-    [ path.glob boost/tr1/tr1 : * : bcc32 sun CVS .svn ]
+    [ path.glob $(BOOST_ROOT)/boost/tr1/tr1 : * : bcc32 sun CVS .svn ]
     ;
 
 # Declare special top-level targets that build and install the desired variants
 # of the libraries.
-boostcpp.declare-targets $(all-libraries) : $(headers) ;
+boostcpp.declare-targets $(all-libraries) : $(headers) : $(all-headers) ;

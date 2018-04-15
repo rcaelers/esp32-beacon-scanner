@@ -143,19 +143,53 @@ void print_compiler_macros()
   PRINT_MACRO(_WCHAR_T_DEFINED);
 #endif
   // MSVC macros:
+  PRINT_MACRO(_ALIGNED_NEW_SUPPORTED);
+  PRINT_MACRO(__ATOM__);
+  PRINT_MACRO(__AVX__);
+  PRINT_MACRO(__AVX2__);
+  PRINT_MACRO(_CHAR_UNSIGNED);
+  PRINT_MACRO(_CLR_VER);
+  PRINT_MACRO(_CONTROL_FLOW_GUARD);
+  PRINT_MACRO(__cplusplus_cli);
+  PRINT_MACRO(__cplusplus_winrt);
   PRINT_MACRO(_CPPRTTI);
+  PRINT_MACRO(_CPPUNWIND);
   PRINT_MACRO(_DLL);
+  PRINT_MACRO(_INLINE_VARIABLES_SUPPORTED);
+  PRINT_MACRO(_ISO_VOLATILE);
+  PRINT_MACRO(_M_AMD64);
+  PRINT_MACRO(_M_ARM);
+  PRINT_MACRO(_M_ARM_ARMV7VE);
+  PRINT_MACRO(_M_ARM_FP);
+  PRINT_MACRO(_M_ARM64);
+  PRINT_MACRO(_M_CEE);
+  PRINT_MACRO(_M_CEE_PURE);
+  PRINT_MACRO(_M_CEE_SAFE);
+  PRINT_MACRO(_M_FP_EXCEPT);
+  PRINT_MACRO(_M_FP_FAST);
+  PRINT_MACRO(_M_FP_PRECISE);
+  PRINT_MACRO(_M_FP_STRICT);
+  PRINT_MACRO(_M_IX86);
+  PRINT_MACRO(_M_IX86_FP);
+  PRINT_MACRO(_M_X64);
   PRINT_MACRO(_M_ALPHA);
   PRINT_MACRO(_M_MPPC);
   PRINT_MACRO(_M_MRX000);
   PRINT_MACRO(_M_PPC);
+  PRINT_MACRO(_MANAGED);
+  PRINT_MACRO(_MSC_BUILD);
   PRINT_MACRO(_MFC_VER);
   PRINT_MACRO(_MSC_EXTENSIONS);
   PRINT_MACRO(_MSC_VER);
   PRINT_MACRO(_MSC_FULL_VER);
   PRINT_MACRO(_MSVC_LANG);
+  PRINT_MACRO(_MSVC_WARNING_LEVEL);
+  PRINT_MACRO(__MSVC_RUNTIME_CHECKS);
   PRINT_MACRO(_MT);
   PRINT_MACRO(_NATIVE_WCHAR_T_DEFINED);
+  PRINT_MACRO(_NOEXCEPT_TYPES_SUPPORTED);
+  PRINT_MACRO(_OPENMP);
+  PRINT_MACRO(_PREFAST_);
   // GNUC options:
   PRINT_MACRO(__GNUC__);
   PRINT_MACRO(__GNUC_MINOR__);
@@ -194,6 +228,32 @@ void print_compiler_macros()
   PRINT_MACRO(__CYGWIN__);
   PRINT_MACRO(__MINGW32__);
   PRINT_MACRO(__GXX_RTTI);
+  PRINT_MACRO(__alpha__);
+  PRINT_MACRO(__amd64__);
+  PRINT_MACRO(__arm__);
+  PRINT_MACRO(__aarch64__);
+  PRINT_MACRO(__bfin);
+  PRINT_MACRO(__convex__);
+  PRINT_MACRO(__epiphany__);
+  PRINT_MACRO(__hppa__);
+  PRINT_MACRO(__ia64__);
+  PRINT_MACRO(__IA64);
+  PRINT_MACRO(__IA64__);
+  PRINT_MACRO(__m68k__);
+  PRINT_MACRO(__mips__);
+  PRINT_MACRO(__powerpc);
+  PRINT_MACRO(__powerpc__);
+  PRINT_MACRO(__powerpc64__);
+  PRINT_MACRO(__POWERPC__);
+  PRINT_MACRO(__ppc__);
+  PRINT_MACRO(__ppc64__);
+  PRINT_MACRO(__PPC__);
+  PRINT_MACRO(__PPC64__);
+  PRINT_MACRO(_ARCH_PPC);
+  PRINT_MACRO(_ARCH_PPC64);
+  PRINT_MACRO(__sh__);
+  PRINT_MACRO(__370__);
+  PRINT_MACRO(__THW_370__);
   // HP aCC:
   PRINT_MACRO(__HP_aCC);
   PRINT_MACRO(_HPACC_);
@@ -581,10 +641,33 @@ void print_stdlib_macros()
    #endif
    // Dinkumware options:
    PRINT_MACRO(_CPPLIB_VER);
+   PRINT_MACRO(_MSVC_STL_VERSION); // VS2017 15.5+
+   PRINT_MACRO(_MSVC_STL_UPDATE);  // VS2017 15.5+
    PRINT_MACRO(_GLOBAL_USING);
    PRINT_MACRO(_HAS_EXCEPTIONS);
    PRINT_MACRO(_HAS_MEMBER_TEMPLATES_REBIND);
    PRINT_MACRO(_HAS_TEMPLATE_PARTIAL_ORDERING);
+   // https://blogs.msdn.microsoft.com/vcblog/2016/08/12/stl-fixes-in-vs-2015-update-3/
+   PRINT_MACRO(_HAS_CXX17);
+   PRINT_MACRO(_HAS_AUTO_PTR_ETC);
+   PRINT_MACRO(_HAS_OLD_IOSTREAMS_MEMBERS);
+   PRINT_MACRO(_HAS_FUNCTION_ASSIGN);
+   PRINT_MACRO(_HAS_TR1_NAMESPACE);
+   PRINT_MACRO(_HAS_IDENTITY_STRUCT);
+   // VS2017 15.5+
+   PRINT_MACRO(_HAS_STATIC_RTTI);
+   PRINT_MACRO(_HAS_UNEXPECTED);
+   PRINT_MACRO(_HAS_STD_BYTE);
+   PRINT_MACRO(_HAS_FUNCTION_ALLOCATOR_SUPPORT);
+   PRINT_MACRO(_HAS_TR2_SYS_NAMESPACE);
+   PRINT_MACRO(_ENFORCE_MATCHING_ALLOCATORS);
+   PRINT_MACRO(_HAS_HAS_UNIQUE_OBJECT_REPRESENTATIONS);
+   PRINT_MACRO(_HAS_INLINE_VARIABLES);
+   PRINT_MACRO(_HAS_ALIGNED_NEW);
+   PRINT_MACRO(_HAS_NOEXCEPT_FUNCTION_TYPES);
+   PRINT_MACRO(_ITERATOR_DEBUG_LEVEL);
+   PRINT_MACRO(_HAS_ITERATOR_DEBUGGING);
+   PRINT_MACRO(_ITERATOR_DEBUG_ARRAY_OVERLOADS);
    // Libc++:
    PRINT_MACRO(_LIBCPP_VERSION);
    // STLPort and generic SGI STL options:
@@ -764,6 +847,7 @@ void print_stdlib_macros()
    PRINT_MACRO(_GLIBCXX_MEM_LIMITS);
    PRINT_MACRO(_GLIBCXX_HOSTED);
    PRINT_MACRO(_GLIBCXX_SJLJ_EXCEPTIONS);
+   PRINT_MACRO(_GLIBCXX_RELEASE);
 
    // Modena C++ standard library
    PRINT_MACRO(MSIPL_ANSI_HEADER);
@@ -1010,6 +1094,7 @@ void print_boost_macros()
    PRINT_MACRO(BOOST_NO_CXX11_DECLTYPE);
    PRINT_MACRO(BOOST_NO_CXX11_DECLTYPE_N3276);
    PRINT_MACRO(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS);
+   PRINT_MACRO(BOOST_NO_CXX11_DEFAULTED_MOVES);
    PRINT_MACRO(BOOST_NO_CXX11_DELETED_FUNCTIONS);
    PRINT_MACRO(BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS);
    PRINT_MACRO(BOOST_NO_CXX11_EXTERN_TEMPLATE);
@@ -1142,10 +1227,13 @@ void print_boost_macros()
    PRINT_MACRO(BOOST_NO_VOID_RETURNS);
 
 
+
    // END GENERATED BLOCK
 
    PRINT_MACRO(BOOST_INTEL);
    PRINT_MACRO(BOOST_MSVC);
+   PRINT_MACRO(BOOST_GCC);
+   PRINT_MACRO(BOOST_LIBSTDCXX_VERSION);
    PRINT_MACRO(BOOST_STD_EXTENSION_NAMESPACE);
    PRINT_MACRO(BOOST_UNREACHABLE_RETURN(0));
    PRINT_MACRO(BOOST_CONSTEXPR);
@@ -1157,6 +1245,65 @@ void print_boost_macros()
    PRINT_MACRO(BOOST_FALLTHROUGH);
    PRINT_MACRO(BOOST_MAY_ALIAS);
    PRINT_MACRO(BOOST_NO_MAY_ALIAS);
+}
+
+void print_sd6_macros()
+{
+    // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0096r5.html
+
+    // C++17:
+    PRINT_MACRO(__cpp_hex_float);
+    PRINT_MACRO(__cpp_inline_variables);
+    PRINT_MACRO(__cpp_aligned_new);
+    PRINT_MACRO(__cpp_guaranteed_copy_elision);
+    PRINT_MACRO(__cpp_noexcept_function_type);
+    PRINT_MACRO(__cpp_fold_expressions);
+    PRINT_MACRO(__cpp_capture_star_this);
+    PRINT_MACRO(__cpp_constexpr);
+    PRINT_MACRO(__cpp_if_constexpr);
+    PRINT_MACRO(__cpp_range_based_for);
+    PRINT_MACRO(__cpp_static_assert);
+    PRINT_MACRO(__cpp_deduction_guides);
+    PRINT_MACRO(__cpp_nontype_template_parameter_auto);
+    PRINT_MACRO(__cpp_namespace_attributes);
+    PRINT_MACRO(__cpp_enumerator_attributes);
+    PRINT_MACRO(__cpp_inheriting_constructors);
+    PRINT_MACRO(__cpp_variadic_using);
+    PRINT_MACRO(__cpp_structured_bindings);
+    PRINT_MACRO(__cpp_aggregate_bases);
+    PRINT_MACRO(__cpp_nontype_template_args);
+    PRINT_MACRO(__cpp_template_template_args);
+
+    // C++14:
+    PRINT_MACRO(__cpp_binary_literals);
+    PRINT_MACRO(__cpp_init_captures);
+    PRINT_MACRO(__cpp_generic_lambdas);
+    PRINT_MACRO(__cpp_sized_deallocation);
+    PRINT_MACRO(__cpp_decltype_auto);
+    PRINT_MACRO(__cpp_return_type_deduction);
+    PRINT_MACRO(__cpp_aggregate_nsdmi);
+    PRINT_MACRO(__cpp_variable_templates);
+
+    // C++11:
+    PRINT_MACRO(__cpp_unicode_characters);
+    PRINT_MACRO(__cpp_raw_strings);
+    PRINT_MACRO(__cpp_unicode_literals);
+    PRINT_MACRO(__cpp_user_defined_literals);
+    PRINT_MACRO(__cpp_threadsafe_static_init);
+    PRINT_MACRO(__cpp_lambdas);
+    PRINT_MACRO(__cpp_decltype);
+    PRINT_MACRO(__cpp_attributes);
+    PRINT_MACRO(__cpp_rvalue_references);
+    PRINT_MACRO(__cpp_variadic_templates);
+    PRINT_MACRO(__cpp_initializer_lists);
+    PRINT_MACRO(__cpp_delegating_constructors);
+    PRINT_MACRO(__cpp_nsdmi);
+    PRINT_MACRO(__cpp_ref_qualifiers);
+    PRINT_MACRO(__cpp_alias_templates);
+
+    // C++98:
+    PRINT_MACRO(__cpp_rtti);
+    PRINT_MACRO(__cpp_exceptions);
 }
 
 void print_separator()
@@ -1176,6 +1323,8 @@ int main()
   print_platform_macros();
   print_separator();
   print_boost_macros();
+  print_separator();
+  print_sd6_macros();
 
   return 0;
 }
