@@ -2,6 +2,7 @@
 
 cd /esp32/esp-idf
 git checkout --track origin/$1
+git reset --recurse --hard HEAD
 git status
 
 cd /esp32/project/main/certs
