@@ -143,7 +143,7 @@ BLEScannerDriver::on_scan_timer()
   try
     {
       json j;
-      if (mqtt && mqtt->connected().get())
+      if (mqtt && mqtt->connected().get() && scan_results.size() > 0)
         {
           for (auto r : scan_results)
             {
