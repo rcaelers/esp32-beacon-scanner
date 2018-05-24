@@ -27,7 +27,6 @@
 #ifdef CONFIG_BT_ENABLED
 
 #include "esp_bt.h"
-#include "controller.h"
 
 #include "esp_log.h"
 
