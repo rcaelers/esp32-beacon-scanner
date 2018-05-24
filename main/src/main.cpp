@@ -37,6 +37,7 @@
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "esp_bt.h"
 
 // TODO: driver should be registered by the driver itself.
 // However, the linker will eliminate unreferenced symbols from static libraries.
@@ -382,6 +383,8 @@ app_main()
 
   loopp::utils::memlog("app_main");
   new Main();
+
+  esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
 
   while (true)
     {
