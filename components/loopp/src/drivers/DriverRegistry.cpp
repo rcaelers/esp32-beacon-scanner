@@ -18,43 +18,58 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef LOOPP_NET_STREAM_BUFFER_HPP
-#define LOOPP_NET_STREAM_BUFFER_HPP
+#include "loopp/drivers/DriverRegistry.hpp"
 
-#include <cstring>
-#include <stdexcept>
-#include <streambuf>
-#include <vector>
+using namespace loopp;
+using namespace loopp::drivers;
 
-namespace loopp
+DriverContext::DriverContext(std::shared_ptr<loopp::core::MainLoop> loop, std::shared_ptr<loopp::mqtt::MqttClient> mqtt, std::string topic_root)
+  : loop(loop)
+  , mqtt(mqtt)
+  , topic_root(topic_root)
 {
-  namespace net
-  {
-    class StreamBuffer : public std::streambuf
+}
+
+std::shared_ptr<loopp::core::MainLoop>
+DriverContext::get_loop() const
+{
+  return loop;
+}
+
+std::shared_ptr<loopp::mqtt::MqttClient> const
+DriverContext::get_mqtt()
+{
+  return mqtt;
+}
+
+std::string
+DriverContext::get_topic_root() const
+{
+  return topic_root;
+}
+
+ DriverRegistry &
+DriverRegistry::instance()
+{
+  static DriverRegistry instance;
+  return instance;
+}
+
+void
+DriverRegistry::register_driver(const std::string &name, IDriverFactory *factory)
+{
+  if (factories.find(name) == factories.end())
     {
-    public:
-      explicit StreamBuffer(std::size_t max_buffer_size = DEFAULT_MAX_BUFFER_SIZE);
+      factories[name] = factory;
+    }
+}
 
-      std::size_t max_size() const noexcept;
-      char *produce_data(std::size_t n);
-      void produce_commit(std::size_t n);
-      char *consume_data() const noexcept;
-      std::size_t consume_size() const noexcept;
-      void consume_commit(std::size_t n);
-
-    private:
-      int_type underflow();
-      int_type overflow(int_type ch);
-      void reserve(std::size_t n);
-
-    private:
-      std::size_t max_buffer_size;
-      std::vector<char> buffer;
-
-      static constexpr std::size_t BUFFER_INCREASE_SIZE = 100;
-      static constexpr std::size_t DEFAULT_MAX_BUFFER_SIZE = 10 * 1024;
-    };
-  } // namespace net
-} // namespace loopp
-
-#endif // LOOPP_NET_STREAM_BUFFER_HPP
+std::shared_ptr<IDriver>
+DriverRegistry::create(const std::string &name, DriverContext context, const nlohmann::json &config)
+{
+  if (factories.find(name) != factories.end())
+    {
+      return factories[name]->create(context, config);
+    }
+  return std::shared_ptr<IDriver>();
+}

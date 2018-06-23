@@ -57,59 +57,20 @@ namespace loopp
       Headers &operator=(const Headers &other) = default;
       Headers &operator=(Headers &&other) = default;
 
-      bool has(const std::string &name) const
-      {
-        return headers.count(name) > 0;
-      }
-
-      void set(const std::string &name, const std::string &value)
-      {
-        headers[name] = value;
-      }
-
-      void emplace(const std::string &name, const std::string &value)
-      {
-        headers.emplace(name, value);
-      }
-
-      void remove(const std::string &name)
-      {
-        headers.erase(name);
-      }
-
-      void clear()
-      {
-        headers.clear();
-      }
-
-      std::string &operator[](const std::string &name)
-      {
-        return headers[name];
-      }
-
-      const std::string &operator[](const std::string &name) const
-      {
-        return headers.at(name);
-      }
+      bool has(const std::string &name) const;
+      void set(const std::string &name, const std::string &value);
+      void emplace(const std::string &name, const std::string &value);
+      void remove(const std::string &name);
+      void clear();
+      std::string &operator[](const std::string &name);
+      const std::string &operator[](const std::string &name) const;
 
       friend std::ostream &operator<<(std::ostream &stream, const Headers &headers);
 
-      HeadersMap::iterator begin()
-      {
-        return headers.begin();
-      }
-      HeadersMap::const_iterator begin() const
-      {
-        return headers.begin();
-      }
-      HeadersMap::iterator end()
-      {
-        return headers.end();
-      }
-      HeadersMap::const_iterator end() const
-      {
-        return headers.end();
-      }
+      HeadersMap::iterator begin();
+      HeadersMap::const_iterator begin() const;
+      HeadersMap::iterator end();
+      HeadersMap::const_iterator end() const;
 
       void parse(std::istream &stream);
 

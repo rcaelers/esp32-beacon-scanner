@@ -242,6 +242,7 @@ private:
         // Some drivers may have pending notifications that will keep it in memory
         // So invoke the next step asynchronously and give drivers a chance to close down.
         loop->invoke([this, top]() {
+          loopp::drivers::DriverContext context(loop, mqtt, topic_root);
           for (auto device_config : top.at("devices"))
             {
               std::string name = device_config["name"].get<std::string>();
@@ -249,7 +250,6 @@ private:
               ESP_LOGI(tag, "-> Name  : %s", name.c_str());
               ESP_LOGI(tag, "-> Driver: %s", driver_name.c_str());
 
-              loopp::drivers::DriverContext context(loop, mqtt, topic_root);
               std::shared_ptr<loopp::drivers::IDriver> driver = loopp::drivers::DriverRegistry::instance().create(driver_name, context, device_config);
               if (driver)
                 {

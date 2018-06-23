@@ -38,11 +38,7 @@ namespace loopp
     class BLEScanner
     {
     public:
-      static BLEScanner &instance()
-      {
-        static BLEScanner instance;
-        return instance;
-      }
+      static BLEScanner &instance();
 
       struct ScanResult
       {
@@ -57,10 +53,14 @@ namespace loopp
         int rssi;
       };
 
-      BLEScanner(const BLEScanner&) = delete;
-      BLEScanner& operator=(const BLEScanner&) = delete;
+      BLEScanner(const BLEScanner &) = delete;
+      BLEScanner &operator=(const BLEScanner &) = delete;
 
-      enum class ScanType { Active, Passive };
+      enum class ScanType
+      {
+        Active,
+        Passive
+      };
 
       void set_scan_type(ScanType type);
       void set_scan_interval(uint16_t interval);
@@ -91,7 +91,7 @@ namespace loopp
 
       const static int scan_duration = 30;
     };
-  }
-}
+  } // namespace ble
+} // namespace loopp
 
 #endif // LOOPP_BLE_BLE_SCANNER_HPP

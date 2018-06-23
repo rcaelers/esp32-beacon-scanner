@@ -36,6 +36,13 @@ static const char *tag = "BLE";
 using namespace loopp;
 using namespace loopp::ble;
 
+BLEScanner &
+BLEScanner::instance()
+{
+  static BLEScanner instance;
+  return instance;
+}
+
 BLEScanner::BLEScanner()
   : ble_scan_params()
 {

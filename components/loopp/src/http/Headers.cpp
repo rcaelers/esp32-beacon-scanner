@@ -28,6 +28,70 @@
 
 using namespace loopp::http;
 
+bool
+Headers::has(const std::string &name) const
+{
+  return headers.count(name) > 0;
+}
+
+void
+Headers::set(const std::string &name, const std::string &value)
+{
+  headers[name] = value;
+}
+
+void
+Headers::emplace(const std::string &name, const std::string &value)
+{
+  headers.emplace(name, value);
+}
+
+void
+Headers::remove(const std::string &name)
+{
+  headers.erase(name);
+}
+
+void
+Headers::clear()
+{
+  headers.clear();
+}
+
+std::string &Headers::operator[](const std::string &name)
+{
+  return headers[name];
+}
+
+const std::string &Headers::operator[](const std::string &name) const
+{
+  return headers.at(name);
+}
+
+Headers::HeadersMap::iterator
+Headers::begin()
+{
+  return headers.begin();
+}
+
+Headers::HeadersMap::const_iterator
+Headers::begin() const
+{
+  return headers.begin();
+}
+
+Headers::HeadersMap::iterator
+Headers::end()
+{
+  return headers.end();
+}
+
+Headers::HeadersMap::const_iterator
+Headers::end() const
+{
+  return headers.end();
+}
+
 void
 Headers::parse(std::istream &stream)
 {

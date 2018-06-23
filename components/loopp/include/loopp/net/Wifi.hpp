@@ -36,11 +36,7 @@ namespace loopp
     class Wifi
     {
     public:
-      static Wifi &instance()
-      {
-        static Wifi instance;
-        return instance;
-      }
+      static Wifi &instance();
 
       Wifi(const Wifi &) = delete;
       Wifi &operator=(const Wifi &) = delete;

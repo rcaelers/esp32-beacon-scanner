@@ -30,6 +30,13 @@ static const char *tag = "WIFI";
 using namespace loopp;
 using namespace loopp::net;
 
+Wifi &
+Wifi::instance()
+{
+  static Wifi instance;
+  return instance;
+}
+
 Wifi::Wifi()
 {
   tcpip_adapter_init();

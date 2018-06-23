@@ -48,7 +48,7 @@ namespace loopp
     private:
       std::list<std::shared_ptr<Decoder>> decoders;
     };
-  }
-}
+  } // namespace ble
+} // namespace loopp
 
 #endif // LOOPP_BLE_DECODER_HPP
