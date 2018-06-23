@@ -3,6 +3,10 @@
 cd /esp32/esp-idf
 git checkout --track origin/$1
 git reset --recurse --hard HEAD
+git pull -p
+git submodule sync
+git submodule update --recursive
+git clean -fdx
 git status
 
 cd /esp32/project/main/certs
@@ -32,6 +36,7 @@ CONFIG_CA_CERTIFICATE=y
 CONFIG_CLIENT_CERTIFICATES=y
 CONFIG_EMBEDDED_CERTIFICATES=y
 CONFIG_DEFAULT_BLE_SCANNER=y
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 EOF
 
 rm -rf build
