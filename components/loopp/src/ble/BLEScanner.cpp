@@ -29,8 +29,6 @@
 #include "esp_bt.h"
 #include "esp_log.h"
 
-#include "loopp/core/Task.hpp"
-
 static const char *tag = "BLE";
 
 using namespace loopp;
