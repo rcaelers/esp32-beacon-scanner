@@ -39,6 +39,8 @@ CONFIG_DEFAULT_BLE_SCANNER=y
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 EOF
 
+export $PATH:/esp32-$2/xtensa-esp32-elf/bin
+
 rm -rf build
 make defconfig
 make all
