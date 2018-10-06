@@ -19,6 +19,8 @@ RUN \
   apt-get clean
 
 RUN mkdir /esp32 && \
+    mkdir /esp32/gcc-5 && \
+    mkdir /esp32/gcc-8 && \
     mkdir /esp32/esp-idf && \
     mkdir /esp32/project
 
