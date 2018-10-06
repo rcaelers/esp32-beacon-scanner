@@ -97,6 +97,9 @@ namespace loopp
       std::string status_message_;
       Headers headers_;
     };
+
+    std::ostream &operator<<(std::ostream &stream, const Response &response);
+
   } // namespace http
 } // namespace loopp
 

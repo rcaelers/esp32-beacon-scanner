@@ -127,6 +127,9 @@ namespace loopp
       Headers headers_;
       std::string content_;
     };
+
+    std::ostream &operator<<(std::ostream &stream, const Request &request);
+
   } // namespace http
 } // namespace loopp
 

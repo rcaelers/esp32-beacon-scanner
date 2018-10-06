@@ -21,6 +21,7 @@
 #include "loopp/mqtt/MqttClient.hpp"
 
 #include <algorithm>
+#include <numeric>
 
 #include "boost/format.hpp"
 
