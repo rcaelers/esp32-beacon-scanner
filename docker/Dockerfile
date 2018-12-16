@@ -15,9 +15,10 @@ RUN \
        gperf \
        libncurses-dev \
        make \
-       ninja \
+       ninja-build \
        python \
        python-pip \
+       python-pyparsing \
        python-serial && \
   apt-get clean
 
