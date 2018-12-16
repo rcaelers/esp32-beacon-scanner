@@ -7,6 +7,7 @@ RUN \
   apt-get update -y && \
   apt-get install -y \
        bison \
+       cmake \
        curl \
        flex \
        git \
@@ -14,6 +15,7 @@ RUN \
        gperf \
        libncurses-dev \
        make \
+       ninja \
        python \
        python-pip \
        python-serial && \
