@@ -39,8 +39,18 @@ CONFIG_DEFAULT_BLE_SCANNER=y
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 EOF
 
-export PATH=$PATH:/esp32/$2/xtensa-esp32-elf/bin
+export PATH=$PATH:/esp32/$2/xtensa-esp32-elf/bin:$IDF_PATH/tools
 
 rm -rf build
-make defconfig
-make all
+
+case "$3" in
+    cmake)
+        idf.py build
+        ;;
+    make)
+        make defconfig
+        make all
+        ;;
+    "*")
+        ;;
+esac

@@ -1,0 +1,19 @@
+set(COMPONENT_SRCS "src/main.cpp")
+set(COMPONENT_ADD_INCLUDEDIRS "include" "src")
+
+if (CONFIG_EMBEDDED_CERTIFICATES)
+if (CONFIG_CA_CERTIFICATE)
+set(COMPONENT_EMBED_TXTFILES ${COMPONENT_EMBED_TXTFILES} "certs/CA.crt")
+endif()
+if (CONFIG_CLIENT_CERTIFICATES)
+set(COMPONENT_EMBED_TXTFILES ${COMPONENT_EMBED_TXTFILES} "certs/esp32.crt" "certs/esp32.key")
+endif()
+endif()
+
+set(COMPONENT_PRIV_REQUIRES "loopp")
+set(VERSION "0.0.1-1")
+set(CMAKE_CXX_STANDARD 17)
+
+register_component()
+
+component_compile_options(-DVERSION=\"${VERSION}\")
