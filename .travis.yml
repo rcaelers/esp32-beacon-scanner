@@ -21,4 +21,4 @@ before_install:
 script:
   - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh master gcc5
   - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh master gcc8
-  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh release/v3.1 gcc5
+  - docker run --tty --rm -v "$TRAVIS_BUILD_DIR:/esp32/project" rcaelers/esp32-loopp ./travis-build.sh release/v3.2 gcc5
