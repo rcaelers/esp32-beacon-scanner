@@ -9,7 +9,7 @@
 #define BOOST_ENDIAN_CONVERSION_HPP
 
 #include <boost/config.hpp>
-#include <boost/predef/detail/endian_compat.h>
+#include <boost/predef/other/endian.h>
 #include <boost/cstdint.hpp>
 #include <boost/endian/detail/intrinsic.hpp>
 #include <boost/core/scoped_enum.hpp>
@@ -26,7 +26,7 @@ namespace endian
   BOOST_SCOPED_ENUM_START(order)
   {
     big, little,
-# ifdef  BOOST_BIG_ENDIAN
+# if BOOST_ENDIAN_BIG_BYTE
       native = big
 # else
       native = little
@@ -285,7 +285,7 @@ namespace endian
   template <class EndianReversible >
   inline EndianReversible  big_to_native(EndianReversible  x) BOOST_NOEXCEPT
   {
-#   ifdef BOOST_BIG_ENDIAN
+#   if BOOST_ENDIAN_BIG_BYTE
     return x;
 #   else
     return endian_reverse(x);
@@ -295,7 +295,7 @@ namespace endian
   template <class EndianReversible >
   inline EndianReversible  native_to_big(EndianReversible  x) BOOST_NOEXCEPT
   {
-#   ifdef BOOST_BIG_ENDIAN
+#   if BOOST_ENDIAN_BIG_BYTE
     return x;
 #   else
     return endian_reverse(x);
@@ -305,7 +305,7 @@ namespace endian
   template <class EndianReversible >
   inline EndianReversible  little_to_native(EndianReversible  x) BOOST_NOEXCEPT
   {
-#   ifdef BOOST_LITTLE_ENDIAN
+#   if BOOST_ENDIAN_LITTLE_BYTE
     return x;
 #   else
     return endian_reverse(x);
@@ -315,7 +315,7 @@ namespace endian
   template <class EndianReversible >
   inline EndianReversible  native_to_little(EndianReversible  x) BOOST_NOEXCEPT
   {
-#   ifdef BOOST_LITTLE_ENDIAN
+#   if BOOST_ENDIAN_LITTLE_BYTE
     return x;
 #   else
     return endian_reverse(x);
@@ -370,14 +370,14 @@ namespace endian
   }
 
   template <class EndianReversibleInplace>
-#   ifdef BOOST_BIG_ENDIAN
+#   if BOOST_ENDIAN_BIG_BYTE
   inline void big_to_native_inplace(EndianReversibleInplace&) BOOST_NOEXCEPT {}
 #   else
   inline void big_to_native_inplace(EndianReversibleInplace& x) BOOST_NOEXCEPT
     { endian_reverse_inplace(x); }
 #   endif
   template <class EndianReversibleInplace>
-#   ifdef BOOST_BIG_ENDIAN
+#   if BOOST_ENDIAN_BIG_BYTE
   inline void native_to_big_inplace(EndianReversibleInplace&) BOOST_NOEXCEPT {}
 #   else
   inline void native_to_big_inplace(EndianReversibleInplace& x) BOOST_NOEXCEPT
@@ -387,14 +387,14 @@ namespace endian
 #   endif
 
   template <class EndianReversibleInplace>
-#   ifdef BOOST_LITTLE_ENDIAN
+#   if BOOST_ENDIAN_LITTLE_BYTE
   inline void little_to_native_inplace(EndianReversibleInplace&) BOOST_NOEXCEPT {}
 #   else
   inline void little_to_native_inplace(EndianReversibleInplace& x) BOOST_NOEXCEPT
     { endian_reverse_inplace(x); }
 #   endif
   template <class EndianReversibleInplace>
-#   ifdef BOOST_LITTLE_ENDIAN
+#   if BOOST_ENDIAN_LITTLE_BYTE
   inline void native_to_little_inplace(EndianReversibleInplace&) BOOST_NOEXCEPT {}
 #   else
   inline void native_to_little_inplace(EndianReversibleInplace& x) BOOST_NOEXCEPT
@@ -449,7 +449,7 @@ namespace endian
     template <class T>
     inline void big_reverse_copy(T from, char* to) BOOST_NOEXCEPT
     {
-#     ifdef BOOST_BIG_ENDIAN
+#     if BOOST_ENDIAN_BIG_BYTE
       std::memcpy(to, reinterpret_cast<const char*>(&from), sizeof(T));
 #     else
       std::reverse_copy(reinterpret_cast<const char*>(&from),
@@ -459,7 +459,7 @@ namespace endian
     template <class T>
     inline void big_reverse_copy(const char* from, T& to) BOOST_NOEXCEPT
     {
-#     ifdef BOOST_BIG_ENDIAN
+#     if BOOST_ENDIAN_BIG_BYTE
       std::memcpy(reinterpret_cast<char*>(&to), from, sizeof(T));
 #     else
       std::reverse_copy(from, from + sizeof(T), reinterpret_cast<char*>(&to));
@@ -468,7 +468,7 @@ namespace endian
     template <class T>
     inline void little_reverse_copy(T from, char* to) BOOST_NOEXCEPT
     {
-#     ifdef BOOST_LITTLE_ENDIAN
+#     if BOOST_ENDIAN_LITTLE_BYTE
       std::memcpy(to, reinterpret_cast<const char*>(&from), sizeof(T));
 #     else
       std::reverse_copy(reinterpret_cast<const char*>(&from),
@@ -478,7 +478,7 @@ namespace endian
     template <class T>
     inline void little_reverse_copy(const char* from, T& to) BOOST_NOEXCEPT
     {
-#     ifdef BOOST_LITTLE_ENDIAN
+#     if BOOST_ENDIAN_LITTLE_BYTE
       std::memcpy(reinterpret_cast<char*>(&to), from, sizeof(T));
 #     else
       std::reverse_copy(from, from + sizeof(T), reinterpret_cast<char*>(&to));

@@ -35,7 +35,8 @@
 #endif
 
 #include <boost/config.hpp>
-#include <boost/predef/detail/endian_compat.h>
+#include <boost/config/workaround.hpp>
+#include <boost/predef/other/endian.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/endian/buffers.hpp>
 #define  BOOST_ENDIAN_MINIMAL_COVER_OPERATORS
@@ -58,7 +59,8 @@
 #   define BOOST_ENDIAN_DEFAULT_CONSTRUCT = default;  // C++0x
 # endif
 
-# if defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS) && defined(BOOST_ENDIAN_FORCE_PODNESS)
+// g++ pre-4.6 does not support unrestricted unions, but we have no Config macro for that
+# if (defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS) || BOOST_WORKAROUND(BOOST_GCC, < 40600)) && defined(BOOST_ENDIAN_FORCE_PODNESS)
 #   define BOOST_ENDIAN_NO_CTORS
 # endif
 
@@ -146,7 +148,7 @@ namespace endian
   typedef endian_arithmetic<order::little, uint_least64_t, 56>  little_uint56_t;
   typedef endian_arithmetic<order::little, uint_least64_t, 64>  little_uint64_t;
 
-# ifdef BOOST_BIG_ENDIAN
+# if BOOST_ENDIAN_BIG_BYTE
   // native endian signed integer unaligned types
   typedef big_int8_t   native_int8_t;
   typedef big_int16_t  native_int16_t;

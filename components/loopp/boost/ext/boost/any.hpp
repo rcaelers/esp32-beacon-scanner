@@ -30,7 +30,7 @@
 #include <boost/core/addressof.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_const.hpp>
-#include <boost/mpl/if.hpp>
+#include <boost/type_traits/conditional.hpp>
 
 namespace boost
 {
@@ -109,7 +109,7 @@ namespace boost
             return *this;
         }
 
-        // move assignement
+        // move assignment
         any & operator=(any&& rhs) BOOST_NOEXCEPT
         {
             rhs.swap(*this);
@@ -149,7 +149,7 @@ namespace boost
     public: // types (public so any_cast can be non-friend)
 #endif
 
-        class placeholder
+        class BOOST_SYMBOL_VISIBLE placeholder
         {
         public: // structors
 
@@ -271,8 +271,8 @@ namespace boost
         // `ValueType` is not a reference. Example:
         // `static_cast<std::string>(*result);` 
         // which is equal to `std::string(*result);`
-        typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_<
-            boost::is_reference<ValueType>,
+        typedef BOOST_DEDUCED_TYPENAME boost::conditional<
+            boost::is_reference<ValueType>::value,
             ValueType,
             BOOST_DEDUCED_TYPENAME boost::add_reference<ValueType>::type
         >::type ref_type;

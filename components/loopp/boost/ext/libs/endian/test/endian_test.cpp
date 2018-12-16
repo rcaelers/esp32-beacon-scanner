@@ -102,7 +102,7 @@ namespace
   template <class Endian>
   inline void verify_native_representation( int line )
   {
-#   ifdef BOOST_BIG_ENDIAN
+#   if BOOST_ENDIAN_BIG_BYTE
       verify_representation<Endian>( true, line );
 #   else
       verify_representation<Endian>( false, line );
@@ -124,8 +124,8 @@ namespace
     if ( memcmp( v.c, "\x8\7\6\5\4\3\2\1", 8) == 0 )
     {
       cout << "This machine is little-endian.\n";
-  #   ifndef BOOST_LITTLE_ENDIAN
-        cout << "yet boost/detail/endian.hpp does not define BOOST_LITTLE_ENDIAN.\n"
+  #   if !BOOST_ENDIAN_LITTLE_BYTE
+        cout << "yet boost/predef/other/endian.h does not define BOOST_ENDIAN_LITTLE_BYTE.\n"
           "The Boost Endian library must be revised to work correctly on this system.\n"
           "Please report this problem to the Boost mailing list.\n";
         exit(1);
@@ -134,8 +134,8 @@ namespace
     else if ( memcmp( v.c, "\1\2\3\4\5\6\7\x8", 8) == 0 )
     {
       cout << "This machine is big-endian.\n";
-  #   ifndef BOOST_BIG_ENDIAN
-        cout << "yet boost/detail/endian.hpp does not define BOOST_BIG_ENDIAN.\n"
+  #   if !BOOST_ENDIAN_BIG_BYTE
+        cout << "yet boost/predef/other/endian.h does not define BOOST_ENDIAN_BIG_BYTE.\n"
           "The Boost Endian library must be revised to work correctly on this system.\n"
           "Please report this problem to the Boost mailing list.\n";
         exit(1);
