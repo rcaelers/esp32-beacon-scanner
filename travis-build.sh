@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /esp32/esp-idf
+cd /build/esp-idf
 git checkout --track origin/$1
 git reset --recurse --hard HEAD
 git pull -p
@@ -9,7 +9,7 @@ git submodule update --recursive
 git clean -fdx
 git status
 
-cd /esp32/project/main/certs
+cd /build/project/main/certs
 
 if [ -f CA.crt -o -f esp32.crt -o -f esp32.key ]; then
     echo "Certificates already exist. Not overwriting"
@@ -24,9 +24,9 @@ else
     chmod u+w,a+r *.crt *.key
 fi
 
-cd /esp32/project
+cd /build/project
 
-cat > sdkconfig <<EOF
+cat >> sdkconfig.default <<EOF
 CONFIG_MQTT_USER=""
 CONFIG_MQTT_PASSWORD=""
 CONFIG_MQTT_TOPIC_PREFIX="esp"
@@ -39,13 +39,13 @@ CONFIG_DEFAULT_BLE_SCANNER=y
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 EOF
 
-export PATH=$PATH:/esp32/$2/xtensa-esp32-elf/bin:$IDF_PATH/tools
+export PATH=$PATH:/build/$2/xtensa-esp32-elf/bin:$IDF_PATH/tools
 
 rm -rf build
 
 case "$3" in
     cmake)
-        idf.py defconfig build
+        idf.py build
         ;;
     make)
         make defconfig
