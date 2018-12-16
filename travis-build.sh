@@ -45,7 +45,7 @@ rm -rf build
 
 case "$3" in
     cmake)
-        idf.py build
+        idf.py defconfig build
         ;;
     make)
         make defconfig
