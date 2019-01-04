@@ -45,7 +45,6 @@ BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, const 
   , ble_scanner(loopp::ble::BLEScanner::instance())
 {
   topic_scan = context.get_topic_root() + "scan";
-  ESP_LOGD(tag, "BLEScannerDriver");
 
   auto it = config.find("feedback_pin");
   if (it != config.end())
@@ -93,7 +92,6 @@ BLEScannerDriver::BLEScannerDriver(loopp::drivers::DriverContext context, const 
 
 BLEScannerDriver::~BLEScannerDriver()
 {
-  ESP_LOGD(tag, "BLEScannerDriver~");
 }
 
 // https://stackoverflow.com/questions/180947/base64-decode-snippet-in-c
@@ -147,7 +145,6 @@ BLEScannerDriver::on_scan_timer()
         {
           for (auto r : scan_results)
             {
-              ESP_LOGI(tag, "on_scan_timer %s", r.bda_as_string().c_str());
               json jb;
               jb["mac"] = r.bda_as_string();
               jb["bda"] = base64_encode(std::string(reinterpret_cast<char *>(r.bda), sizeof(r.bda)));
@@ -163,7 +160,7 @@ BLEScannerDriver::on_scan_timer()
     }
   catch (std::exception &e)
     {
-      ESP_LOGE(tag, "on_scan_timer %s", e.what());
+      ESP_LOGE(tag, "on_scan_timer. Exception: %s", e.what());
     }
   scan_results.clear();
 }
