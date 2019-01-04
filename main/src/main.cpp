@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// #define LEDTEST
+
 #include <iostream>
 #include <string>
 #include <utility>
@@ -27,12 +29,19 @@
 #include "loopp/core/MainLoop.hpp"
 #include "loopp/core/Task.hpp"
 #include "loopp/drivers/DriverRegistry.hpp"
+
 #include "loopp/mqtt/MqttClient.hpp"
 #include "loopp/net/Wifi.hpp"
 #include "loopp/ota/OTA.hpp"
 #include "loopp/utils/hexdump.hpp"
 #include "loopp/utils/json.hpp"
 #include "loopp/utils/memlog.hpp"
+
+#ifdef LEDTEST
+#include "loopp/led/WS28xxLedStrip.hpp"
+#include "loopp/led/GridLayout.hpp"
+#include "loopp/led/CurrentLimiter.hpp"
+#endif
 
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -42,9 +51,13 @@
 // However, the linker will eliminate unreferenced symbols from static libraries.
 #include "loopp/drivers/BLEScannerDriver.hpp"
 #include "loopp/drivers/GPIODriver.hpp"
+#include "loopp/drivers/LedStripDriver.hpp"
 LOOPP_REGISTER_DRIVER("ble-scanner", loopp::drivers::BLEScannerDriver);
 LOOPP_REGISTER_DRIVER("gpio", loopp::drivers::GPIODriver);
-
+#if __cplusplus > 201703L
+// Requires C++17
+LOOPP_REGISTER_DRIVER("ledstrip", loopp::drivers::LedStripDriver);
+#endif
 static const char current_version[] = VERSION;
 
 using json = nlohmann::json;
@@ -333,6 +346,49 @@ private:
     });
   }
 
+#ifdef LEDTEST
+  void init_leds()
+  {
+    ESP_LOGI(tag, "Init LEDs");
+    loopp::led::WS28xxTiming timing(300, 1090, 1090, 320, 290000);
+    //loopp::led::WS28xxTiming timing(400, 850, 800, 450, 55000);
+    //loopp::led::WS28xxTiming timing(350, 800, 700, 600, 55000);
+    // T1+T2, T3, T1, T2 + T3
+
+    leds = std::make_shared<Leds>(60, Leds::DriverInit{ timing, RMT_CHANNEL_0, GPIO_NUM_4 }, Leds::LayoutInit{ 6, 10 }, Leds::CurrentLimiterInit{});
+    leds->set_current_budget(630);
+    leds->clear();
+    for (int i = 0; i < 60; i++)
+      {
+        // leds->set_color(i, loopp::led::Color(0, 0, 255));
+        leds->set_color_xy(i / 10, i % 10, loopp::led::Color(0, 0, 255));
+      }
+    leds->apply();
+
+    leds_timer = loop->add_periodic_timer(std::chrono::milliseconds(50), std::bind(&Main::on_led_timer, this));
+  }
+
+  void on_led_timer()
+  {
+    count++;
+    leds->clear();
+    for (int i = 0; i < 60; i++)
+      {
+        if (i < (count % 60))
+          {
+            leds->set_color_xy(i / 10, i % 10, loopp::led::Color(255, 255, 255));
+            //leds->set_color(i, loopp::led::Color(255, 255, 255));
+          }
+        else
+          {
+            leds->set_color_xy(i / 10, i % 10, loopp::led::Color(0, 0, 255));
+            //leds->set_color(i, loopp::led::Color(0, 0, 255));
+          }
+      }
+    leds->apply();
+  }
+#endif
+
   void main_task()
   {
     loopp::utils::memlog("main_task");
@@ -348,21 +404,33 @@ private:
     ESP_LOGI(tag, "Main::main_task memory free %d", heap_caps_get_free_size(MALLOC_CAP_DEFAULT));
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
+#ifdef LEDTEST
+    init_leds();
+#endif
     loopp::utils::memlog("running loop");
     loop->run();
   }
+
+#ifdef LEDTEST
+  using Leds = loopp::led::LedStrip<loopp::led::WS28xxDriver, loopp::led::GridLayout, loopp::led::CurrentLimiter>;
+#endif
 
   loopp::ble::BLEScanner &ble_scanner;
   loopp::net::Wifi &wifi;
   std::shared_ptr<loopp::core::MainLoop> loop;
   std::shared_ptr<loopp::mqtt::MqttClient> mqtt;
   std::shared_ptr<loopp::core::Task> task;
+#ifdef LEDTEST
+  std::shared_ptr<Leds> leds;
+#endif
   std::map<std::string, std::shared_ptr<loopp::drivers::IDriver>> drivers;
   loopp::core::MainLoop::timer_id wifi_timeout_timer = 0;
+  loopp::core::MainLoop::timer_id leds_timer = 0;
   int wifi_fail_count = 0;
   std::string topic_root;
   std::string topic_command;
   std::string topic_configuration;
+  int count = 20;
 };
 
 extern "C" void
@@ -381,6 +449,7 @@ app_main()
   heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
   loopp::utils::memlog("app_main");
+
   new Main();
 
   while (true)
