@@ -10,7 +10,7 @@ set(COMPONENT_EMBED_TXTFILES ${COMPONENT_EMBED_TXTFILES} "certs/esp32.crt" "cert
 endif()
 endif()
 
-set(COMPONENT_PRIV_REQUIRES "loopp")
+set(COMPONENT_PRIV_REQUIRES "loopp nvs_flash")
 set(VERSION "0.0.1-1")
 set(CMAKE_CXX_STANDARD 17)
 
