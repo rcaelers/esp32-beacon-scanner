@@ -30,7 +30,7 @@ RUN mkdir /build && \
 
 RUN curl https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz | tar xzf - -C /build/gcc5
 
-RUN curl https://dl.espressif.com/dl/xtensa-esp32-elf-gcc8_2_0-esp32-2018r1-linux-amd64.tar.xz  | tar xJf - -C /build/gcc8
+RUN curl https://dl.espressif.com/dl/xtensa-esp32-elf-gcc8_2_0-esp32-2019r1-rc2-linux-amd64.tar.xz | tar xJf - -C /build/gcc8
 RUN cd /build && \
     git clone --recursive https://github.com/espressif/esp-idf.git
 
